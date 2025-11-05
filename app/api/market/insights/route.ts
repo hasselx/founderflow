@@ -4,10 +4,21 @@ import { type NextRequest, NextResponse } from "next/server"
 async function fetchMarketData(domain: string) {
   try {
     const marketstackRes = await fetch(
-      `http://api.marketstack.com/v1/tickers?access_key=${process.env.MARKETSTACK_API_KEY}&search=${encodeURIComponent(domain)}&limit=5`,
-    ).catch(() => null)
+      `https://api.marketstack.com/v1/tickers?access_key=${process.env.MARKETSTACK_API_KEY}&search=${encodeURIComponent(domain)}&limit=5`,
+      { next: { revalidate: 3600 } },
+    ).catch((err) => {
+      console.error("[v0] Marketstack fetch error:", err)
+      return null
+    })
 
-    const marketstackData = marketstackRes?.ok ? await marketstackRes.json() : { data: [] }
+    let marketstackData = { data: [] }
+    if (marketstackRes?.ok) {
+      try {
+        marketstackData = await marketstackRes.json()
+      } catch (e) {
+        console.error("[v0] Failed to parse Marketstack JSON:", e)
+      }
+    }
 
     const newsRes = await fetch(
       `https://newsapi.org/v2/everything?q=${encodeURIComponent(domain)} market trends startup&sortBy=publishedAt&language=en&pageSize=8`,
@@ -15,10 +26,21 @@ async function fetchMarketData(domain: string) {
         headers: {
           "X-API-Key": process.env.NEWS_API_KEY || "",
         },
+        next: { revalidate: 3600 },
       },
-    ).catch(() => null)
+    ).catch((err) => {
+      console.error("[v0] NewsAPI fetch error:", err)
+      return null
+    })
 
-    const newsData = newsRes?.ok ? await newsRes.json() : { articles: [] }
+    let newsData = { articles: [] }
+    if (newsRes?.ok) {
+      try {
+        newsData = await newsRes.json()
+      } catch (e) {
+        console.error("[v0] Failed to parse NewsAPI JSON:", e)
+      }
+    }
 
     // Extract market trends and news
     const insights = {
@@ -44,7 +66,13 @@ async function fetchMarketData(domain: string) {
     return insights
   } catch (error) {
     console.error("[v0] Market data fetch error:", error)
-    return null
+    return {
+      domain,
+      marketTrends: [],
+      trends: [],
+      timestamp: new Date().toISOString(),
+      error: "Failed to fetch market data",
+    }
   }
 }
 
@@ -57,14 +85,9 @@ export async function GET(request: NextRequest) {
 
   try {
     const insights = await fetchMarketData(domain)
-
-    if (!insights) {
-      return NextResponse.json({ error: "Failed to fetch market data" }, { status: 500 })
-    }
-
     return NextResponse.json(insights)
   } catch (error) {
     console.error("[v0] API error:", error)
-    return NextResponse.json({ error: "An error occurred" }, { status: 500 })
+    return NextResponse.json({ error: "An error occurred", details: String(error) }, { status: 500 })
   }
 }

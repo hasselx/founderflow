@@ -5,7 +5,7 @@ import type React from "react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { CheckCircle2, Lightbulb, Users, TrendingUp } from "lucide-react"
+import { CheckCircle2, Lightbulb, Users, TrendingUp, AlertCircle } from "lucide-react"
 
 type UserRole = "creator" | "community_member" | "investor"
 
@@ -89,14 +89,17 @@ export default function RoleSelectPage() {
 
       if (!response.ok) {
         setError(data.error || "Profile setup failed")
+        console.error("[v0] Profile completion failed:", data)
+        setLoading(false)
         return
       }
 
-      router.push("/dashboard")
+      setTimeout(() => {
+        router.push("/")
+      }, 500)
     } catch (err) {
       setError("An error occurred. Please try again.")
-      console.error(err)
-    } finally {
+      console.error("[v0] Profile submission error:", err)
       setLoading(false)
     }
   }
@@ -118,8 +121,12 @@ export default function RoleSelectPage() {
           </p>
         </div>
 
-        {/* Error message */}
-        {error && <div className="p-4 rounded-lg bg-destructive/10 text-destructive text-sm">{error}</div>}
+        {error && (
+          <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20 flex gap-3 items-start">
+            <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+            <p className="text-destructive text-sm">{error}</p>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Role Selection */}

@@ -30,35 +30,42 @@ export async function POST(request: NextRequest) {
       },
     )
 
-    // Create or update user profile with admin client (bypasses RLS)
-    const { error: upsertError } = await supabaseAdmin.from("users").upsert({
-      id: user.id,
-      email: user.email,
-      full_name: user.user_metadata?.full_name,
-      role,
-    })
+    // Check if user profile already exists
+    const { data: existingUser } = await supabaseAdmin.from("users").select("id").eq("id", user.id).single()
+
+    const { error: upsertError } = await supabaseAdmin.from("users").upsert(
+      {
+        id: user.id,
+        email: user.email,
+        full_name: user.user_metadata?.full_name,
+        role,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "id" },
+    )
 
     if (upsertError) {
       console.error("[v0] User upsert error:", upsertError)
       return NextResponse.json({ error: upsertError.message }, { status: 400 })
     }
 
-    // Insert user domains with regular authenticated client
+    await supabaseAdmin.from("user_domains").delete().eq("user_id", user.id)
+
     const domainInserts = domains.map((domain: string) => ({
       user_id: user.id,
       domain,
     }))
 
-    const { error: domainError } = await supabase.from("user_domains").insert(domainInserts)
+    const { error: domainError } = await supabaseAdmin.from("user_domains").insert(domainInserts)
 
     if (domainError) {
       console.error("[v0] Domain insert error:", domainError)
       return NextResponse.json({ error: domainError.message }, { status: 400 })
     }
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, message: "Profile updated successfully" })
   } catch (error) {
     console.error("[v0] Profile completion error:", error)
-    return NextResponse.json({ error: "An error occurred" }, { status: 500 })
+    return NextResponse.json({ error: "An error occurred", details: String(error) }, { status: 500 })
   }
 }

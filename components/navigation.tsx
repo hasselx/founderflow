@@ -1,6 +1,6 @@
 "use client"
 
-import { Zap, BarChart3, Lightbulb, Users, FileText, Compass, LogOut } from "lucide-react"
+import { Zap, BarChart3, Lightbulb, Users, LogOut, BookOpen, Calendar } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 
@@ -14,12 +14,12 @@ export default function Navigation({ currentPage, onPageChange, user }: Navigati
   const router = useRouter()
 
   const navItems = [
-    { id: "dashboard", label: "Dashboard", icon: BarChart3 },
-    { id: "idea", label: "Submit Idea", icon: Lightbulb },
-    { id: "competitor", label: "Market Research", icon: Compass },
-    { id: "planner", label: "Project Planner", icon: FileText },
-    { id: "portfolio", label: "Portfolio", icon: Zap },
-    { id: "community", label: "Community", icon: Users },
+    { id: "dashboard", label: "Dashboard", icon: BarChart3, href: "/" },
+    { id: "idea", label: "Submit Idea", icon: Lightbulb, href: "/" },
+    { id: "education", label: "Learn", icon: BookOpen, href: "/education" },
+    { id: "planner", label: "Project Planner", icon: Calendar, href: "/planner" },
+    { id: "portfolio", label: "Portfolio", icon: Zap, href: "/portfolio" },
+    { id: "community", label: "Community", icon: Users, href: "/community" },
   ]
 
   const handleLogout = async () => {
@@ -31,14 +31,21 @@ export default function Navigation({ currentPage, onPageChange, user }: Navigati
     }
   }
 
+  const handleNavigation = (item: any) => {
+    if (item.href) {
+      router.push(item.href)
+    }
+    onPageChange(item.id)
+  }
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-card border-b border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
-          {/* Logo - Updated to use SVG community icon */}
+          {/* Logo */}
           <div
             className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
-            onClick={() => onPageChange("dashboard")}
+            onClick={() => handleNavigation({ id: "dashboard", href: "/" })}
           >
             <div className="w-10 h-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-lg">
               FF
@@ -53,7 +60,7 @@ export default function Navigation({ currentPage, onPageChange, user }: Navigati
               return (
                 <button
                   key={item.id}
-                  onClick={() => onPageChange(item.id)}
+                  onClick={() => handleNavigation(item)}
                   className={`px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
                     currentPage === item.id
                       ? "bg-primary text-primary-foreground"
