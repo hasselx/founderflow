@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import LandingPage from "@/components/landing-page"
-import Dashboard from "@/components/dashboard"
 import { getSupabaseClient } from "@/lib/supabase/client"
 
 export default function HomePage() {
@@ -43,5 +42,17 @@ export default function HomePage() {
     )
   }
 
-  return isAuthenticated ? <Dashboard /> : <LandingPage />
+  if (isAuthenticated) {
+    router.push("/dashboard")
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 rounded-full border-4 border-border border-t-primary animate-spin mx-auto"></div>
+          <p className="text-muted-foreground">Redirecting to dashboard...</p>
+        </div>
+      </div>
+    )
+  }
+
+  return <LandingPage />
 }
