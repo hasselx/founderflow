@@ -7,7 +7,6 @@ import QuickStart from "@/components/quick-start"
 import ProjectsGrid from "@/components/projects-grid"
 import PopularTemplates from "@/components/popular-templates"
 import MarketInsights from "@/components/market-insights"
-import RecommendedOpportunities from "@/components/recommended-opportunities"
 import { getSupabaseClient } from "@/lib/supabase/client"
 
 export default function DashboardPage() {
@@ -86,7 +85,7 @@ export default function DashboardPage() {
           }))
         }
 
-        // Community engagement and market insights
+        // Community engagement
         const { data: discussionsData, error: discussionsError } = await supabase
           .from("discussions")
           .select("upvotes")
@@ -101,16 +100,21 @@ export default function DashboardPage() {
         }
 
         // Market insights count
-        const { data: insightsData, error: insightsError } = await supabase
-          .from("market_insights")
-          .select("id")
-          .in("domain", domainsData?.map((d) => d.domain) || [])
+        if (domainsData && domainsData.length > 0) {
+          const { data: insightsData, error: insightsError } = await supabase
+            .from("market_insights")
+            .select("id")
+            .in(
+              "domain",
+              domainsData.map((d) => d.domain),
+            )
 
-        if (!insightsError && insightsData) {
-          setStats((prev) => ({
-            ...prev,
-            marketInsights: insightsData.length,
-          }))
+          if (!insightsError && insightsData) {
+            setStats((prev) => ({
+              ...prev,
+              marketInsights: insightsData.length,
+            }))
+          }
         }
       } catch (error) {
         console.error("[v0] Error fetching user data:", error)
@@ -165,18 +169,13 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-8">
-          {/* Quick Start */}
           <QuickStart />
           <ProjectsGrid />
-
           {!loading && userDomains.length > 0 && <MarketInsights domains={userDomains} />}
-
-          {!loading && <RecommendedOpportunities userRole="creator" domains={userDomains} />}
         </div>
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Popular Templates */}
           <PopularTemplates />
         </div>
       </div>
