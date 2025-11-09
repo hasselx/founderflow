@@ -95,7 +95,7 @@ export default function RoleSelectPage() {
       }
 
       setTimeout(() => {
-        router.push("/")
+        router.push("/dashboard")
       }, 500)
     } catch (err) {
       setError("An error occurred. Please try again.")
