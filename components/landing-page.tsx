@@ -3,8 +3,56 @@
 import Link from "next/link"
 import { ArrowRight, Zap, Users, TrendingUp, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useEffect, useState } from "react"
+import { getSupabaseClient } from "@/lib/supabase/client"
 
 export default function LandingPage() {
+  const [stats, setStats] = useState({
+    startups: 0,
+    community: 0,
+    funding: 0,
+  })
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const supabase = getSupabaseClient()
+
+        // Fetch real stats from database
+        const { data: startupData } = await supabase.from("startup_ideas").select("id", { count: "exact", head: true })
+
+        const { data: discussionData } = await supabase.from("discussions").select("id", { count: "exact", head: true })
+
+        const { data: portfolioData } = await supabase
+          .from("portfolios")
+          .select("financial_projections", { count: "exact" })
+
+        let totalFunding = 0
+        if (portfolioData) {
+          totalFunding = portfolioData.reduce((sum: number, p: any) => {
+            if (p.financial_projections?.estimated_funding) {
+              return sum + p.financial_projections.estimated_funding
+            }
+            return sum
+          }, 0)
+        }
+
+        setStats({
+          startups: startupData?.length || 0,
+          community: discussionData?.length || 0,
+          funding: totalFunding,
+        })
+      } catch (error) {
+        console.error("[v0] Error fetching stats:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchStats()
+  }, [])
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-card">
       {/* Navigation */}
@@ -59,16 +107,22 @@ export default function LandingPage() {
           {/* Stats */}
           <div className="grid grid-cols-3 gap-4 pt-8">
             <div className="space-y-2">
-              <div className="text-3xl font-bold text-primary">500+</div>
+              <div className="text-3xl font-bold text-primary">
+                {loading ? "..." : `${Math.max(stats.startups, 1)}+`}
+              </div>
               <div className="text-sm text-muted-foreground">Startups Validated</div>
             </div>
             <div className="space-y-2">
-              <div className="text-3xl font-bold text-accent">2.4K</div>
+              <div className="text-3xl font-bold text-accent">
+                {loading ? "..." : `${Math.max(stats.community, 1)}`}
+              </div>
               <div className="text-sm text-muted-foreground">Community Members</div>
             </div>
             <div className="space-y-2">
-              <div className="text-3xl font-bold text-primary">$150M+</div>
-              <div className="text-sm text-muted-foreground">Funding Raised</div>
+              <div className="text-3xl font-bold text-primary">
+                {loading ? "..." : `$${(stats.funding / 1000000).toFixed(0)}M+`}
+              </div>
+              <div className="text-sm text-muted-foreground">Funding Tracked</div>
             </div>
           </div>
         </div>
