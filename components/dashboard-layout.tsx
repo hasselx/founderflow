@@ -105,7 +105,7 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
             {/* Logo */}
             <div
               className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={() => router.push("/")}
+              onClick={() => router.push("/dashboard")}
             >
               <div className="w-10 h-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-lg">
                 <Zap className="w-6 h-6" />
@@ -118,7 +118,7 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
               <Button
                 variant={currentPage === "dashboard" ? "default" : "ghost"}
                 className="gap-2"
-                onClick={() => router.push("/")}
+                onClick={() => router.push("/dashboard")}
               >
                 Dashboard
               </Button>
