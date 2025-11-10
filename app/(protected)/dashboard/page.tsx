@@ -6,6 +6,8 @@ import PopularTemplates from "@/components/popular-templates"
 import MarketInsights from "@/components/market-insights"
 import { getSupabaseServerClient } from "@/lib/supabase/server"
 
+export const dynamic = "force-dynamic"
+
 export default async function DashboardPage() {
   const supabase = getSupabaseServerClient()
 
