@@ -9,7 +9,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server"
 export const dynamic = "force-dynamic"
 
 export default async function DashboardPage() {
-  const supabase = getSupabaseServerClient()
+  const supabase = await getSupabaseServerClient()
 
   const {
     data: { user },
@@ -20,29 +20,33 @@ export default async function DashboardPage() {
   }
 
   try {
-    const [userDataResult, domainsDataResult, projectsDataResult, timelinesDataResult, discussionsDataResult] =
-      await Promise.all([
-        supabase.from("users").select("full_name").eq("id", user.id).single(),
-        supabase.from("user_domains").select("domain").eq("user_id", user.id),
-        supabase.from("startup_ideas").select("id").eq("user_id", user.id),
-        supabase.from("project_timelines").select("progress_percentage").eq("user_id", user.id),
-        supabase.from("discussions").select("upvotes").eq("user_id", user.id),
-      ])
+    const [userDataResult, domainsDataResult, projectsDataResult, discussionsDataResult] = await Promise.all([
+      supabase.from("users").select("full_name").eq("id", user.id).single(),
+      supabase.from("user_domains").select("domain").eq("user_id", user.id),
+      supabase.from("startup_ideas").select("id").eq("user_id", user.id),
+      supabase.from("discussions").select("upvotes").eq("user_id", user.id),
+    ])
 
     const userName = userDataResult.data?.full_name || "User"
     const domainsData = domainsDataResult.data || []
     const userDomains = domainsData.map((d) => d.domain) || []
     const projectsData = projectsDataResult.data || []
-    const timelinesData = timelinesDataResult.data || []
     const discussionsData = discussionsDataResult.data || []
+
+    let timelinesData = []
+    if (projectsData.length > 0) {
+      const ideaIds = projectsData.map((p) => p.id)
+      const { data: timelines } = await supabase
+        .from("project_timelines")
+        .select("progress_percentage")
+        .in("idea_id", ideaIds)
+
+      timelinesData = timelines || []
+    }
 
     let marketInsights = 0
     if (userDomains.length > 0) {
-      const { data: insightsData } = await supabase
-        .from("market_insights")
-        .select("id")
-        .in("domain", userDomains)
-        .catch(() => ({ data: null }))
+      const { data: insightsData } = await supabase.from("market_insights").select("id").in("domain", userDomains)
 
       marketInsights = insightsData?.length || 0
     }
