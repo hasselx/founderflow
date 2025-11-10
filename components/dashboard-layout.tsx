@@ -1,7 +1,7 @@
+// Keeping for backwards compatibility, but new pages should use the Server Component layout
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Calendar, CheckSquare, Users, BarChart3, Bell, Zap, LogOut } from "lucide-react"
@@ -26,7 +26,6 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
   const [userName, setUserName] = useState("User")
   const [userEmail, setUserEmail] = useState("")
   const [userInitial, setUserInitial] = useState("U")
-  const [sidebarOpen, setSidebarOpen] = useState(true)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -43,14 +42,13 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
           return
         }
 
-        // Fetch user profile from database
-        const { data: userData, error: userError } = await supabase
+        const { data: userData } = await supabase
           .from("users")
           .select("full_name, email")
           .eq("id", authUser.id)
           .single()
 
-        if (!userError && userData) {
+        if (userData) {
           setUserName(userData.full_name || "User")
           setUserEmail(userData.email || authUser.email || "")
           setUserInitial((userData.full_name || "U").charAt(0).toUpperCase())
@@ -98,11 +96,9 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header Navigation */}
       <header className="sticky top-0 z-50 bg-card border-b border-border">
         <div className="max-w-full px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
-            {/* Logo */}
             <div
               className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
               onClick={() => router.push("/dashboard")}
@@ -113,7 +109,6 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
               <span className="text-xl font-bold text-foreground hidden sm:inline">FounderFlow</span>
             </div>
 
-            {/* Nav Items */}
             <div className="hidden md:flex items-center gap-1">
               <Button
                 variant={currentPage === "dashboard" ? "default" : "ghost"}
@@ -138,7 +133,6 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
               </Button>
             </div>
 
-            {/* User Menu */}
             <div className="flex items-center gap-4">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -169,9 +163,7 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
         </div>
       </header>
 
-      {/* Main Content with Sidebar */}
       <div className="flex">
-        {/* Left Sidebar - Project Tools */}
         <aside className="hidden lg:flex w-64 bg-card border-r border-border flex-col gap-6 p-6 sticky top-20 h-[calc(100vh-80px)]">
           <div>
             <h3 className="font-semibold text-sm text-foreground mb-4">Project Tools</h3>
@@ -186,7 +178,6 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
                         ? "bg-primary text-primary-foreground"
                         : "text-muted-foreground hover:text-foreground hover:bg-muted"
                     }`}
-                    onClick={() => router.push(`/project-tools#${tool.id}`)}
                   >
                     <Icon className="w-4 h-4" />
                     <span>{tool.label}</span>
@@ -197,7 +188,6 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
           </div>
         </aside>
 
-        {/* Main Content */}
         <main className="flex-1 overflow-y-auto">{children}</main>
       </div>
     </div>
