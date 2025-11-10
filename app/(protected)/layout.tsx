@@ -16,7 +16,7 @@ interface ProtectedLayoutProps {
 }
 
 export default async function ProtectedLayout({ children }: ProtectedLayoutProps) {
-  const supabase = getSupabaseServerClient()
+  const supabase = await getSupabaseServerClient()
 
   const {
     data: { user },
