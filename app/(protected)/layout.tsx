@@ -1,5 +1,6 @@
 import type React from "react"
 import { Calendar, CheckSquare, Users, BarChart3, Bell, Zap, LogOut } from "lucide-react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { getSupabaseServerClient } from "@/lib/supabase/server"
 import {
@@ -47,24 +48,30 @@ export default async function ProtectedLayout({ children }: ProtectedLayoutProps
         <div className="max-w-full px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
             {/* Logo */}
-            <div className="flex items-center gap-2">
+            <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
               <div className="w-10 h-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-lg">
                 <Zap className="w-6 h-6" />
               </div>
               <span className="text-xl font-bold text-foreground hidden sm:inline">FounderFlow</span>
-            </div>
+            </Link>
 
             {/* Nav Items */}
             <div className="hidden md:flex items-center gap-1">
-              <Button variant="default" className="gap-2">
-                Dashboard
-              </Button>
-              <Button variant="ghost" className="gap-2">
-                Business Plan
-              </Button>
-              <Button variant="ghost" className="gap-2">
-                Project Planner
-              </Button>
+              <Link href="/dashboard">
+                <Button variant="default" className="gap-2">
+                  Dashboard
+                </Button>
+              </Link>
+              <Link href="/dashboard/business-plan">
+                <Button variant="ghost" className="gap-2">
+                  Business Plan
+                </Button>
+              </Link>
+              <Link href="/dashboard/project-planner">
+                <Button variant="ghost" className="gap-2">
+                  Project Planner
+                </Button>
+              </Link>
             </div>
 
             {/* User Menu */}
