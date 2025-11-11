@@ -62,12 +62,12 @@ export default async function ProtectedLayout({ children }: ProtectedLayoutProps
                   Dashboard
                 </Button>
               </Link>
-              <Link href="/dashboard/business-plan">
+              <Link href="/business-plan">
                 <Button variant="ghost" className="gap-2">
                   Business Plan
                 </Button>
               </Link>
-              <Link href="/dashboard/project-planner">
+              <Link href="/project-planner">
                 <Button variant="ghost" className="gap-2">
                   Project Planner
                 </Button>
