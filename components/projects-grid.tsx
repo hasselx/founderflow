@@ -104,13 +104,17 @@ export default function ProjectsGrid() {
     try {
       const supabase = getSupabaseClient()
 
-      // Upload image to Supabase Storage
       const fileName = `${projectId}-${Date.now()}.${file.name.split(".").pop()}`
+
+      // Upload image to Supabase Storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from("project-images")
-        .upload(fileName, file)
+        .upload(fileName, file, { upsert: true })
 
-      if (uploadError) throw uploadError
+      if (uploadError) {
+        console.error("[v0] Upload error:", uploadError)
+        throw uploadError
+      }
 
       // Get public URL
       const { data: urlData } = supabase.storage.from("project-images").getPublicUrl(fileName)
@@ -175,7 +179,7 @@ export default function ProjectsGrid() {
                   <div className="text-4xl font-bold text-primary/20">{project.title.charAt(0)}</div>
                 )}
 
-                {/* Upload button */}
+                {/* Upload button overlay */}
                 <label
                   htmlFor={`image-upload-${project.id}`}
                   className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"

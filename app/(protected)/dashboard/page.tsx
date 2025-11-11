@@ -2,7 +2,6 @@ import { TrendingUp, BarChart3, Users2 } from "lucide-react"
 import StatsCard from "@/components/stats-card"
 import QuickStart from "@/components/quick-start"
 import ProjectsGrid from "@/components/projects-grid"
-import PopularTemplates from "@/components/popular-templates"
 import MarketInsights from "@/components/market-insights"
 import { getSupabaseServerClient } from "@/lib/supabase/server"
 
@@ -115,13 +114,10 @@ export default async function DashboardPage() {
           <div className="lg:col-span-2 space-y-8">
             <QuickStart />
             <ProjectsGrid />
-            {userDomains.length > 0 && <MarketInsights domains={userDomains} />}
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            <PopularTemplates />
-          </div>
+          {/* Right Sidebar - Only Quick Start & Market Insights */}
+          <div className="space-y-6">{userDomains.length > 0 && <MarketInsights domains={userDomains} />}</div>
         </div>
       </div>
     )

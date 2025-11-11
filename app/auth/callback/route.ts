@@ -26,17 +26,17 @@ export async function GET(request: NextRequest) {
         .eq("id", data.user.id)
         .single()
 
-      // If no profile exists, create one and redirect to role selection
       if (profileError || !userProfile) {
         await supabaseAdmin.from("users").insert({
           id: data.user.id,
           email: data.user.email,
           full_name: data.user.user_metadata?.full_name || data.user.email?.split("@")[0] || "",
+          role: "founder",
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
 
-        return NextResponse.redirect(new URL("/auth/role-select", request.url))
+        return NextResponse.redirect(new URL("/dashboard", request.url))
       }
 
       // If profile exists but no role, redirect to role selection
@@ -46,6 +46,8 @@ export async function GET(request: NextRequest) {
 
       // User has complete profile, redirect to dashboard
       return NextResponse.redirect(new URL(next, request.url))
+    } else {
+      console.error("[v0] OAuth exchange failed:", error)
     }
   }
 
