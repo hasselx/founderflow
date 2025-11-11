@@ -17,9 +17,16 @@ export default async function ProjectPlannerPage() {
 
   const { data: ideas } = await supabase.from("startup_ideas").select("id, title").eq("user_id", user.id)
 
-  const { data: timelines } = await supabase
-    .from("project_timelines")
-    .select("id, phase_name, status, progress_percentage, idea_id")
+  const ideaIds = ideas?.map((i) => i.id) || []
+
+  const { data: timelines } =
+    ideaIds.length > 0
+      ? await supabase
+          .from("project_timelines")
+          .select("id, phase_name, status, progress_percentage, idea_id, start_date, end_date")
+          .in("idea_id", ideaIds)
+          .order("created_at", { ascending: false })
+      : { data: [] }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -41,8 +48,14 @@ export default async function ProjectPlannerPage() {
                   <div>
                     <h3 className="text-lg font-semibold text-foreground">{ideaTitle}</h3>
                     <p className="text-sm text-muted-foreground">{timeline.phase_name}</p>
+                    {timeline.start_date && timeline.end_date && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {new Date(timeline.start_date).toLocaleDateString()} -{" "}
+                        {new Date(timeline.end_date).toLocaleDateString()}
+                      </p>
+                    )}
                   </div>
-                  <span className="px-3 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                  <span className="px-3 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary capitalize">
                     {timeline.status}
                   </span>
                 </div>
@@ -71,7 +84,7 @@ export default async function ProjectPlannerPage() {
           </p>
           <Link href="/dashboard">
             <button className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">
-              Create Startup Idea
+              Go to Dashboard
             </button>
           </Link>
         </div>

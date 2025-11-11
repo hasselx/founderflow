@@ -15,20 +15,32 @@ export async function GET(request: NextRequest) {
     const { error, data } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!error && data.user) {
-      // Check if user has completed profile
       const supabaseAdmin = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL || "",
         process.env.SUPABASE_SERVICE_ROLE_KEY || "",
       )
 
-      const { data: userProfile } = await supabaseAdmin.from("users").select("role").eq("id", data.user.id).single()
+      const { data: userProfile, error: profileError } = await supabaseAdmin
+        .from("users")
+        .select("id, role, email")
+        .eq("id", data.user.id)
+        .single()
 
-      // If no profile, redirect to role selection
-      if (!userProfile || !userProfile.role) {
+      if (profileError || !userProfile) {
+        // Create user profile
+        await supabaseAdmin.from("users").insert({
+          id: data.user.id,
+          email: data.user.email,
+          full_name: data.user.user_metadata?.full_name || data.user.email?.split("@")[0] || "",
+        })
+
         return NextResponse.redirect(new URL("/auth/role-select", request.url))
       }
 
-      // Profile complete, redirect to dashboard
+      if (!userProfile.role) {
+        return NextResponse.redirect(new URL("/auth/role-select", request.url))
+      }
+
       return NextResponse.redirect(new URL(next, request.url))
     }
   }

@@ -15,7 +15,11 @@ export default async function BusinessPlanPage() {
     return <div>Not authenticated</div>
   }
 
-  const { data: ideas } = await supabase.from("startup_ideas").select("id, title, description").eq("user_id", user.id)
+  const { data: ideas } = await supabase
+    .from("startup_ideas")
+    .select("id, title, description, created_at, status")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -36,8 +40,15 @@ export default async function BusinessPlanPage() {
               key={idea.id}
               className="p-6 border border-border rounded-lg bg-card hover:border-primary transition-colors"
             >
-              <h3 className="text-lg font-semibold text-foreground mb-2">{idea.title}</h3>
-              <p className="text-muted-foreground text-sm mb-4">{idea.description}</p>
+              <div className="flex justify-between items-start mb-3">
+                <h3 className="text-lg font-semibold text-foreground">{idea.title}</h3>
+                {idea.status && (
+                  <span className="px-2 py-1 text-xs rounded-full bg-primary/10 text-primary capitalize">
+                    {idea.status}
+                  </span>
+                )}
+              </div>
+              <p className="text-muted-foreground text-sm mb-4 line-clamp-2">{idea.description}</p>
               <button className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium">
                 Create Business Plan
               </button>
@@ -51,7 +62,7 @@ export default async function BusinessPlanPage() {
           </p>
           <Link href="/dashboard">
             <button className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">
-              Create Startup Idea
+              Go to Dashboard
             </button>
           </Link>
         </div>

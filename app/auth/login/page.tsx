@@ -22,20 +22,26 @@ export default function LoginPage() {
     setError("")
 
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+      const supabase = getSupabaseClient()
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       })
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        setError(data.error || "Login failed")
+      if (error) {
+        setError(error.message)
         return
       }
 
-      router.push("/auth/role-select")
+      if (data.user) {
+        const { data: userProfile } = await supabase.from("users").select("role").eq("id", data.user.id).single()
+
+        if (!userProfile || !userProfile.role) {
+          router.push("/auth/role-select")
+        } else {
+          router.push("/dashboard")
+        }
+      }
     } catch (err) {
       setError("An error occurred. Please try again.")
       console.error(err)

@@ -111,7 +111,7 @@ export default function PreferencesPage() {
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-foreground">Interested Topics</h2>
             <p className="text-sm text-muted-foreground">
-              We'll use these preferences to personalize your market insights and recommendations
+              Select topics that interest you to personalize your experience
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
