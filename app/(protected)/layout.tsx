@@ -1,8 +1,11 @@
-import type React from "react"
+"use client"
+
+import React from "react"
+
 import { Calendar, CheckSquare, Users, BarChart3, Zap } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { getSupabaseServerClient } from "@/lib/supabase/server"
+import { usePathname } from "next/navigation"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,22 +20,34 @@ interface ProtectedLayoutProps {
   children: React.ReactNode
 }
 
-export default async function ProtectedLayout({ children }: ProtectedLayoutProps) {
-  const supabase = await getSupabaseServerClient()
+// Fallback client component wrapper to handle server data
+export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
+  const pathname = usePathname()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const [userName, setUserName] = React.useState("User")
+  const [userEmail, setUserEmail] = React.useState("")
+  const [userInitial, setUserInitial] = React.useState("U")
 
-  if (!user) {
-    return <div>Not authenticated</div>
+  React.useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const response = await fetch("/api/auth/user")
+        const data = await response.json()
+        if (data.user) {
+          setUserName(data.user.full_name || "User")
+          setUserEmail(data.user.email || "")
+          setUserInitial((data.user.full_name || "U").charAt(0).toUpperCase())
+        }
+      } catch (error) {
+        console.error("[v0] Error fetching user:", error)
+      }
+    }
+    fetchUserData()
+  }, [])
+
+  const isActive = (href: string) => {
+    return pathname === href || pathname.startsWith(href + "/")
   }
-
-  const { data: userData } = await supabase.from("users").select("full_name, email").eq("id", user.id).single()
-
-  const userName = userData?.full_name || "User"
-  const userEmail = userData?.email || user.email || ""
-  const userInitial = (userName || "U").charAt(0).toUpperCase()
 
   const projectTools = [
     { id: "timeline", label: "Timeline", icon: Calendar, href: "/dashboard/tools/timeline" },
@@ -58,17 +73,17 @@ export default async function ProtectedLayout({ children }: ProtectedLayoutProps
             {/* Nav Items */}
             <div className="hidden md:flex items-center gap-1">
               <Link href="/dashboard">
-                <Button variant="default" className="gap-2">
+                <Button variant={isActive("/dashboard") ? "default" : "ghost"} className="gap-2">
                   Dashboard
                 </Button>
               </Link>
               <Link href="/business-plan">
-                <Button variant="ghost" className="gap-2">
+                <Button variant={isActive("/business-plan") ? "default" : "ghost"} className="gap-2">
                   Business Plan
                 </Button>
               </Link>
               <Link href="/project-planner">
-                <Button variant="ghost" className="gap-2">
+                <Button variant={isActive("/project-planner") ? "default" : "ghost"} className="gap-2">
                   Project Planner
                 </Button>
               </Link>

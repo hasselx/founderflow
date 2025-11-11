@@ -47,10 +47,10 @@ export async function GET(request: NextRequest) {
       // User has complete profile, redirect to dashboard
       return NextResponse.redirect(new URL(next, request.url))
     } else {
-      console.error("[v0] OAuth exchange failed:", error)
+      console.error("[v0] OAuth exchange failed:", error?.message)
+      return NextResponse.redirect(new URL("/auth/login?error=auth_failed", request.url))
     }
   }
 
-  // Redirect to error page if no code or auth failed
-  return NextResponse.redirect(new URL("/auth/login?error=callback_failed", request.url))
+  return NextResponse.redirect(new URL("/auth/login?error=no_code", request.url))
 }

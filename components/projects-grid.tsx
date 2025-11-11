@@ -106,13 +106,17 @@ export default function ProjectsGrid() {
 
       const fileName = `${projectId}-${Date.now()}.${file.name.split(".").pop()}`
 
-      // Upload image to Supabase Storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from("project-images")
-        .upload(fileName, file, { upsert: true })
+        .upload(fileName, file, { upsert: true, cacheControl: "3600" })
 
       if (uploadError) {
-        console.error("[v0] Upload error:", uploadError)
+        console.error("[v0] Storage error:", uploadError.message)
+        if (uploadError.message.includes("not found")) {
+          alert("Storage not configured. Please contact support.")
+        } else {
+          alert("Failed to upload image. Please try again.")
+        }
         throw uploadError
       }
 
@@ -124,6 +128,7 @@ export default function ProjectsGrid() {
         .from("startup_ideas")
         .update({ image_url: urlData.publicUrl })
         .eq("id", projectId)
+        .eq("user_id", (await supabase.auth.getUser()).data.user?.id)
 
       if (updateError) throw updateError
 
@@ -131,7 +136,6 @@ export default function ProjectsGrid() {
       setProjects((prev) => prev.map((p) => (p.id === projectId ? { ...p, image_url: urlData.publicUrl } : p)))
     } catch (error) {
       console.error("[v0] Error uploading image:", error)
-      alert("Failed to upload image. Please try again.")
     } finally {
       setUploadingImageFor(null)
     }
