@@ -1,5 +1,5 @@
 import type React from "react"
-import { Calendar, CheckSquare, Users, BarChart3, Bell, Zap, LogOut } from "lucide-react"
+import { Calendar, CheckSquare, Users, BarChart3, Zap } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { getSupabaseServerClient } from "@/lib/supabase/server"
@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import LogoutButton from "@/components/logout-button"
 
 interface ProtectedLayoutProps {
   children: React.ReactNode
@@ -34,11 +35,10 @@ export default async function ProtectedLayout({ children }: ProtectedLayoutProps
   const userInitial = (userName || "U").charAt(0).toUpperCase()
 
   const projectTools = [
-    { id: "timeline", label: "Timeline", icon: Calendar, href: "#timeline" },
-    { id: "tasks", label: "Tasks", icon: CheckSquare, href: "#tasks" },
-    { id: "resources", label: "Resources", icon: Users, href: "#resources" },
-    { id: "analytics", label: "Analytics", icon: BarChart3, href: "#analytics" },
-    { id: "notifications", label: "Notifications", icon: Bell, href: "#notifications" },
+    { id: "timeline", label: "Timeline", icon: Calendar, href: "/dashboard/tools/timeline" },
+    { id: "tasks", label: "Tasks", icon: CheckSquare, href: "/dashboard/tools/tasks" },
+    { id: "resources", label: "Resources", icon: Users, href: "/dashboard/tools/resources" },
+    { id: "analytics", label: "Analytics", icon: BarChart3, href: "/dashboard/tools/analytics" },
   ]
 
   return (
@@ -91,12 +91,15 @@ export default async function ProtectedLayout({ children }: ProtectedLayoutProps
                     <span className="text-xs text-muted-foreground">{userEmail}</span>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>Profile Settings</DropdownMenuItem>
-                  <DropdownMenuItem>Preferences</DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard/profile">Profile Settings</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard/preferences">Preferences</Link>
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="text-destructive cursor-pointer">
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Logout
+                  <DropdownMenuItem asChild>
+                    <LogoutButton />
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -108,20 +111,19 @@ export default async function ProtectedLayout({ children }: ProtectedLayoutProps
       {/* Main Content with Sidebar */}
       <div className="flex">
         {/* Left Sidebar - Project Tools */}
-        <aside className="hidden lg:flex w-64 bg-card border-r border-border flex-col gap-6 p-6 sticky top-20 h-[calc(100vh-80px)]">
+        <aside className="hidden lg:flex w-64 bg-card border-r border-border flex-col gap-6 p-6 sticky top-20 h-[calc(100vh-80px)] overflow-y-auto">
           <div>
             <h3 className="font-semibold text-sm text-foreground mb-4">Project Tools</h3>
             <nav className="space-y-2">
               {projectTools.map((tool) => {
                 const Icon = tool.icon
                 return (
-                  <button
-                    key={tool.id}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-muted-foreground hover:text-foreground hover:bg-muted"
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span>{tool.label}</span>
-                  </button>
+                  <Link key={tool.id} href={tool.href}>
+                    <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-muted-foreground hover:text-foreground hover:bg-muted">
+                      <Icon className="w-4 h-4" />
+                      <span>{tool.label}</span>
+                    </button>
+                  </Link>
                 )
               })}
             </nav>

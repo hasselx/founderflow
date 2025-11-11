@@ -68,10 +68,16 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
 
   const handleLogout = async () => {
     try {
-      await fetch("/api/auth/logout", { method: "POST" })
-      router.push("/")
+      const response = await fetch("/api/auth/logout", { method: "POST" })
+      const data = await response.json()
+      if (data.success) {
+        router.push("/")
+      } else {
+        console.error("[v0] Logout failed:", data.error)
+      }
     } catch (error) {
       console.error("[v0] Logout error:", error)
+      router.push("/")
     }
   }
 
