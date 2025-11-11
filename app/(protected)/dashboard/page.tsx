@@ -29,7 +29,7 @@ export default async function DashboardPage() {
 
     const userName = userDataResult.data?.full_name || "User"
     const domainsData = domainsDataResult.data || []
-    const userDomains = domainsData.map((d) => d.domain) || []
+    const userDomains = Array.from(new Set(domainsData.map((d) => d.domain)))
     const projectsData = projectsDataResult.data || []
     const discussionsData = discussionsDataResult.data || []
 
@@ -65,6 +65,11 @@ export default async function DashboardPage() {
       marketInsights,
     }
 
+    const projectsTrend = totalProjects > 0 ? `+${Math.max(0, totalProjects - 1)} vs last month` : "+0 vs last month"
+    const completionTrend = completionRate > 0 ? `+${completionRate}% vs last month` : "+0% vs last month"
+    const engagementTrend = communityEngagement > 0 ? `+${communityEngagement} vs last month` : "+0 vs last month"
+    const insightsTrend = marketInsights > 0 ? `+${marketInsights} vs last month` : "+0 vs last month"
+
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}
@@ -79,28 +84,28 @@ export default async function DashboardPage() {
             title="Total Projects"
             value={stats.totalProjects.toString()}
             description="Active ideas in development"
-            trend={`+${Math.max(0, stats.totalProjects - 3)} vs last month`}
+            trend={projectsTrend}
             icon={<BarChart3 className="w-6 h-6 text-primary" />}
           />
           <StatsCard
             title="Completion Rate"
             value={`${stats.completionRate}%`}
             description="Average project progress"
-            trend="+12% vs last month"
+            trend={completionTrend}
             icon={<TrendingUp className="w-6 h-6 text-accent" />}
           />
           <StatsCard
             title="Community Engagement"
             value={stats.communityEngagement.toString()}
             description="Total interactions this month"
-            trend="+18% vs last month"
+            trend={engagementTrend}
             icon={<Users2 className="w-6 h-6 text-primary" />}
           />
           <StatsCard
             title="Market Insights"
             value={stats.marketInsights.toString()}
             description="New opportunities identified"
-            trend="+24 vs last month"
+            trend={insightsTrend}
             icon={<TrendingUp className="w-6 h-6 text-accent" />}
           />
         </div>

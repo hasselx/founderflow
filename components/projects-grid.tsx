@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { getSupabaseClient } from "@/lib/supabase/client"
-import { Loader2 } from "lucide-react"
+import { Loader2, Upload } from "lucide-react"
 
 interface Project {
   id: string
@@ -14,11 +14,13 @@ interface Project {
   status: string
   created_at: string
   updated_at: string
+  image_url?: string
 }
 
 export default function ProjectsGrid() {
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
+  const [uploadingImageFor, setUploadingImageFor] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -92,6 +94,45 @@ export default function ProjectsGrid() {
     return `${Math.floor(diffInDays / 30)} months ago`
   }
 
+  const handleImageUpload = async (projectId: string, file: File) => {
+    if (!file.type.startsWith("image/")) {
+      alert("Please upload an image file")
+      return
+    }
+
+    setUploadingImageFor(projectId)
+    try {
+      const supabase = getSupabaseClient()
+
+      // Upload image to Supabase Storage
+      const fileName = `${projectId}-${Date.now()}.${file.name.split(".").pop()}`
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from("project-images")
+        .upload(fileName, file)
+
+      if (uploadError) throw uploadError
+
+      // Get public URL
+      const { data: urlData } = supabase.storage.from("project-images").getPublicUrl(fileName)
+
+      // Update project with image URL
+      const { error: updateError } = await supabase
+        .from("startup_ideas")
+        .update({ image_url: urlData.publicUrl })
+        .eq("id", projectId)
+
+      if (updateError) throw updateError
+
+      // Update local state
+      setProjects((prev) => prev.map((p) => (p.id === projectId ? { ...p, image_url: urlData.publicUrl } : p)))
+    } catch (error) {
+      console.error("[v0] Error uploading image:", error)
+      alert("Failed to upload image. Please try again.")
+    } finally {
+      setUploadingImageFor(null)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -123,8 +164,43 @@ export default function ProjectsGrid() {
           const completion = getCompletionPercentage(project.status)
           return (
             <Card key={project.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="h-40 bg-gradient-to-br from-primary/10 to-accent/10 relative overflow-hidden flex items-center justify-center">
-                <div className="text-4xl font-bold text-primary/20">{project.title.charAt(0)}</div>
+              <div className="h-40 bg-gradient-to-br from-primary/10 to-accent/10 relative overflow-hidden flex items-center justify-center group">
+                {project.image_url ? (
+                  <img
+                    src={project.image_url || "/placeholder.svg"}
+                    alt={project.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="text-4xl font-bold text-primary/20">{project.title.charAt(0)}</div>
+                )}
+
+                {/* Upload button */}
+                <label
+                  htmlFor={`image-upload-${project.id}`}
+                  className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                >
+                  {uploadingImageFor === project.id ? (
+                    <Loader2 className="w-8 h-8 text-white animate-spin" />
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 text-white">
+                      <Upload className="w-8 h-8" />
+                      <span className="text-sm font-medium">Upload Image</span>
+                    </div>
+                  )}
+                </label>
+                <input
+                  id={`image-upload-${project.id}`}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) handleImageUpload(project.id, file)
+                  }}
+                  disabled={uploadingImageFor === project.id}
+                />
+
                 <Badge className={`absolute top-3 right-3 ${getStatusColor(project.status)}`}>
                   {project.status.replace("_", " ")}
                 </Badge>

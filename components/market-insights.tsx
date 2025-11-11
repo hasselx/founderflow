@@ -43,15 +43,16 @@ export default function MarketInsights({ domains }: { domains?: string[] }) {
     }
   }
 
+  const uniqueDomains = domains ? Array.from(new Set(domains)) : []
+
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-foreground mb-4">Market Insights</h2>
 
-        {/* Domain filter */}
-        {domains && domains.length > 0 && (
+        {uniqueDomains.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-6">
-            {domains.map((domain) => (
+            {uniqueDomains.map((domain) => (
               <button
                 key={domain}
                 onClick={() => setSelectedDomain(domain)}
