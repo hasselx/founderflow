@@ -1,3 +1,5 @@
+"use client"
+
 import { Calendar, CheckSquare, Users, BarChart3, Bell } from "lucide-react"
 import Link from "next/link"
 import { getSupabaseServerClient } from "@/lib/supabase/server"
@@ -138,10 +140,16 @@ export default async function ProjectPlannerPage() {
                 <p className="text-sm text-muted-foreground">Track progress across all project phases</p>
               </div>
               <div className="flex gap-2">
-                <button className="px-4 py-2 rounded-lg border border-border bg-background hover:bg-muted transition-colors">
+                <button
+                  className="px-4 py-2 rounded-lg border border-border bg-background hover:bg-muted transition-colors"
+                  onClick={() => alert("Calendar view coming soon!")}
+                >
                   View Calendar
                 </button>
-                <button className="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
+                <button
+                  className="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                  onClick={() => alert("Add phase form coming soon!")}
+                >
                   + Add Phase
                 </button>
               </div>
@@ -182,7 +190,10 @@ export default async function ProjectPlannerPage() {
                             />
                           </div>
                         </div>
-                        <button className="px-6 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
+                        <button
+                          className="px-6 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                          onClick={() => alert("Add task form coming soon!")}
+                        >
                           + Add Task
                         </button>
                       </div>

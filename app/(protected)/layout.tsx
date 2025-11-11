@@ -2,7 +2,7 @@
 
 import React from "react"
 
-import { Calendar, CheckSquare, Users, BarChart3, Zap } from "lucide-react"
+import { Zap } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { usePathname } from "next/navigation"
@@ -20,7 +20,6 @@ interface ProtectedLayoutProps {
   children: React.ReactNode
 }
 
-// Fallback client component wrapper to handle server data
 export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
   const pathname = usePathname()
 
@@ -46,15 +45,19 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
   }, [])
 
   const isActive = (href: string) => {
-    return pathname === href || pathname.startsWith(href + "/")
+    if (href === "/dashboard") {
+      return (
+        pathname === "/dashboard" || (pathname.startsWith("/dashboard") && !pathname.startsWith("/dashboard/tools"))
+      )
+    }
+    if (href === "/business-plan") {
+      return pathname === "/business-plan" || pathname.startsWith("/business-plan/")
+    }
+    if (href === "/project-planner") {
+      return pathname === "/project-planner" || pathname.startsWith("/project-planner/")
+    }
+    return false
   }
-
-  const projectTools = [
-    { id: "timeline", label: "Timeline", icon: Calendar, href: "/dashboard/tools/timeline" },
-    { id: "tasks", label: "Tasks", icon: CheckSquare, href: "/dashboard/tools/tasks" },
-    { id: "resources", label: "Resources", icon: Users, href: "/dashboard/tools/resources" },
-    { id: "analytics", label: "Analytics", icon: BarChart3, href: "/dashboard/tools/analytics" },
-  ]
 
   return (
     <div className="min-h-screen bg-background">
@@ -123,7 +126,7 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
         </div>
       </header>
 
-      {/* Main Content - NO SIDEBAR HERE */}
+      {/* Main Content */}
       <main className="w-full overflow-y-auto">{children}</main>
     </div>
   )

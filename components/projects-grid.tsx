@@ -104,19 +104,26 @@ export default function ProjectsGrid() {
     try {
       const supabase = getSupabaseClient()
 
-      const fileName = `${projectId}-${Date.now()}.${file.name.split(".").pop()}`
+      const fileName = `project-images/${projectId}/${Date.now()}.${file.name.split(".").pop()}`
+
+      // First, check if bucket exists by trying to get a list
+      const { data: buckets } = await supabase.storage.listBuckets()
+      const bucketExists = buckets?.some((b) => b.name === "project-images")
+
+      if (!bucketExists) {
+        console.error("[v0] Storage bucket not found")
+        alert("Storage bucket not configured. Please create a 'project-images' bucket in Supabase Storage.")
+        setUploadingImageFor(null)
+        return
+      }
 
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from("project-images")
         .upload(fileName, file, { upsert: true, cacheControl: "3600" })
 
       if (uploadError) {
-        console.error("[v0] Storage error:", uploadError.message)
-        if (uploadError.message.includes("not found")) {
-          alert("Storage not configured. Please contact support.")
-        } else {
-          alert("Failed to upload image. Please try again.")
-        }
+        console.error("[v0] Upload error:", uploadError)
+        alert("Failed to upload image: " + uploadError.message)
         throw uploadError
       }
 
@@ -128,7 +135,6 @@ export default function ProjectsGrid() {
         .from("startup_ideas")
         .update({ image_url: urlData.publicUrl })
         .eq("id", projectId)
-        .eq("user_id", (await supabase.auth.getUser()).data.user?.id)
 
       if (updateError) throw updateError
 

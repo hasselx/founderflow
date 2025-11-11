@@ -1,30 +1,94 @@
+"use client"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Users } from "lucide-react"
+import { Users, Loader2 } from "lucide-react"
+import { useEffect, useState } from "react"
+import { getSupabaseClient } from "@/lib/supabase/client"
+
+interface ResourceItem {
+  name: string
+  role: string
+}
+
+interface ResourceCategory {
+  category: string
+  items: ResourceItem[]
+}
 
 export default function ResourcesPage() {
-  const resources = [
-    {
-      category: "Team Members",
-      items: [
-        { name: "John Doe", role: "Co-founder" },
-        { name: "Jane Smith", role: "CTO" },
-      ],
-    },
-    {
-      category: "Tools & Services",
-      items: [
-        { name: "AWS", role: "Cloud Infrastructure" },
-        { name: "Figma", role: "Design Tool" },
-      ],
-    },
-    {
-      category: "Funding & Financial",
-      items: [
-        { name: "Angel Investor Fund", role: "$100K available" },
-        { name: "Bootstrapping Budget", role: "$50K" },
-      ],
-    },
-  ]
+  const [resources, setResources] = useState<ResourceCategory[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchResources = async () => {
+      try {
+        const supabase = getSupabaseClient()
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+
+        if (!user) return
+
+        const { data: cofounders } = await supabase
+          .from("cofounder_profiles")
+          .select("id, bio")
+          .eq("user_id", user.id)
+          .limit(5)
+
+        const teamMembers =
+          cofounders?.map((cf) => ({
+            name: cf.bio?.split("\n")[0] || "Team Member",
+            role: "Team Member",
+          })) || []
+
+        const { data: ideas } = await supabase.from("startup_ideas").select("id, business_model").eq("user_id", user.id)
+
+        const toolsSet = new Set<string>()
+        ideas?.forEach((idea) => {
+          if (idea.business_model) {
+            toolsSet.add(idea.business_model)
+          }
+        })
+
+        const tools = Array.from(toolsSet).map((tool) => ({
+          name: tool || "Tool",
+          role: "Business Model",
+        }))
+
+        setResources([
+          {
+            category: "Team Members",
+            items: teamMembers.length > 0 ? teamMembers : [{ name: "Add team members", role: "Start collaborating" }],
+          },
+          {
+            category: "Tools & Services",
+            items: tools.length > 0 ? tools : [{ name: "Add tools", role: "Infrastructure" }],
+          },
+          {
+            category: "Funding & Financial",
+            items: [{ name: "Track your funding", role: "Financial management" }],
+          },
+        ])
+      } catch (error) {
+        console.error("[v0] Error fetching resources:", error)
+        setResources([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchResources()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="flex-1 p-6 md:p-8">
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex-1 p-6 md:p-8">

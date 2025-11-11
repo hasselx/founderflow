@@ -4,12 +4,13 @@ import { useEffect, useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Loader2, TrendingUp, ExternalLink } from "lucide-react"
+import { getSupabaseClient } from "@/lib/supabase/client"
 
 interface Trend {
   title: string
   description: string
   source: string
-  url: string
+  url?: string
   date: string
 }
 
@@ -23,6 +24,32 @@ export default function MarketInsights({ domains }: { domains?: string[] }) {
   const [insights, setInsights] = useState<MarketInsight[]>([])
   const [loading, setLoading] = useState(false)
   const [selectedDomain, setSelectedDomain] = useState<string>(domains?.[0] || "")
+  const [allDomains, setAllDomains] = useState<string[]>([])
+
+  useEffect(() => {
+    const fetchDomains = async () => {
+      try {
+        const supabase = getSupabaseClient()
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+
+        if (!user) return
+
+        const { data } = await supabase.from("user_domains").select("domain").eq("user_id", user.id)
+
+        const uniqueDomains = Array.from(new Set(data?.map((d) => d.domain) || []))
+        setAllDomains(uniqueDomains)
+        if (uniqueDomains.length > 0 && !selectedDomain) {
+          setSelectedDomain(uniqueDomains[0])
+        }
+      } catch (error) {
+        console.error("[v0] Error fetching domains:", error)
+      }
+    }
+
+    fetchDomains()
+  }, [])
 
   useEffect(() => {
     if (selectedDomain) {
@@ -33,26 +60,42 @@ export default function MarketInsights({ domains }: { domains?: string[] }) {
   const fetchInsights = async () => {
     setLoading(true)
     try {
-      const response = await fetch(`/api/market/insights?domain=${encodeURIComponent(selectedDomain)}`)
-      const data = await response.json()
-      setInsights([data])
+      const supabase = getSupabaseClient()
+      const { data, error } = await supabase
+        .from("market_insights")
+        .select("*")
+        .eq("domain", selectedDomain)
+        .order("created_at", { ascending: false })
+        .limit(10)
+
+      if (error) throw error
+
+      const trends =
+        data?.map((insight) => ({
+          title: insight.title,
+          description: insight.description || "",
+          source: insight.source || "FounderFlow",
+          url: insight.data?.url || "#",
+          date: insight.created_at,
+        })) || []
+
+      setInsights([{ domain: selectedDomain, trends, timestamp: new Date().toISOString() }])
     } catch (error) {
-      console.error("Failed to fetch insights:", error)
+      console.error("[v0] Failed to fetch insights:", error)
+      setInsights([])
     } finally {
       setLoading(false)
     }
   }
-
-  const uniqueDomains = domains ? Array.from(new Set(domains)) : []
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-foreground mb-4">Market Insights</h2>
 
-        {uniqueDomains.length > 0 && (
+        {allDomains.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-6">
-            {uniqueDomains.map((domain) => (
+            {allDomains.map((domain) => (
               <button
                 key={domain}
                 onClick={() => setSelectedDomain(domain)}
@@ -73,7 +116,7 @@ export default function MarketInsights({ domains }: { domains?: string[] }) {
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      ) : insights.length > 0 ? (
+      ) : insights.length > 0 && insights[0].trends.length > 0 ? (
         <div className="grid gap-4">
           {insights[0].trends.map((trend, index) => (
             <Card key={index} className="p-6 hover:shadow-lg transition-shadow">
@@ -90,19 +133,24 @@ export default function MarketInsights({ domains }: { domains?: string[] }) {
                     <span>{new Date(trend.date).toLocaleDateString()}</span>
                   </div>
                 </div>
-                <a href={trend.url} target="_blank" rel="noopener noreferrer" className="flex-shrink-0">
-                  <Button variant="ghost" size="sm" className="gap-2">
-                    Read <ExternalLink className="h-4 w-4" />
-                  </Button>
-                </a>
+                {trend.url && (
+                  <a href={trend.url} target="_blank" rel="noopener noreferrer" className="flex-shrink-0">
+                    <Button variant="ghost" size="sm" className="gap-2">
+                      Read <ExternalLink className="h-4 w-4" />
+                    </Button>
+                  </a>
+                )}
               </div>
             </Card>
           ))}
         </div>
       ) : (
         <Card className="p-12 text-center">
-          <p className="text-muted-foreground">No insights available for {selectedDomain}. Try another domain.</p>
-          {domains && domains.length > 0 && (
+          <p className="text-muted-foreground">
+            {selectedDomain ? `No insights available for ${selectedDomain}. ` : "No domains selected. "}
+            Try adding more industries to your profile.
+          </p>
+          {allDomains.length > 0 && (
             <Button onClick={fetchInsights} className="mt-4 gap-2">
               <Loader2 className="h-4 w-4" />
               Retry
