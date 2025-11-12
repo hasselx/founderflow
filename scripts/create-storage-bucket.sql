@@ -1,23 +1,27 @@
 -- Create storage bucket for project images
--- Create the project-images storage bucket if it doesn't exist
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('project-images', 'project-images', true)
-ON CONFLICT (id) DO NOTHING;
+-- Note: This script sets up RLS policies. The bucket itself is auto-created by the app if needed.
 
--- Drop existing policies if they exist (to avoid conflicts)
+-- Insert bucket if it doesn't exist
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES ('project-images', 'project-images', true, 5242880, ARRAY['image/*'])
+ON CONFLICT (id) DO UPDATE SET
+  public = true,
+  file_size_limit = 5242880,
+  allowed_mime_types = ARRAY['image/*'];
+
+-- Drop existing policies if they exist
 DROP POLICY IF EXISTS "Users can upload project images" ON storage.objects;
 DROP POLICY IF EXISTS "Users can update project images" ON storage.objects;
 DROP POLICY IF EXISTS "Public can view project images" ON storage.objects;
 DROP POLICY IF EXISTS "Users can delete project images" ON storage.objects;
 
--- Set up storage policies for project-images bucket
--- Allow authenticated users to upload their own project images
+-- Allow authenticated users to upload project images
 CREATE POLICY "Users can upload project images"
 ON storage.objects FOR INSERT
 TO authenticated
 WITH CHECK (bucket_id = 'project-images');
 
--- Allow authenticated users to update their own project images
+-- Allow authenticated users to update project images
 CREATE POLICY "Users can update project images"
 ON storage.objects FOR UPDATE
 TO authenticated
@@ -29,7 +33,7 @@ ON storage.objects FOR SELECT
 TO public
 USING (bucket_id = 'project-images');
 
--- Allow authenticated users to delete their own project images
+-- Allow authenticated users to delete project images
 CREATE POLICY "Users can delete project images"
 ON storage.objects FOR DELETE
 TO authenticated
