@@ -1,7 +1,7 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Users, Loader2 } from "lucide-react"
+import { Users, Loader2, BookOpen } from "lucide-react"
 import { useEffect, useState } from "react"
 import { getSupabaseClient } from "@/lib/supabase/client"
 
@@ -95,6 +95,25 @@ export default function ResourcesPage() {
       <div>
         <h1 className="text-3xl font-bold text-foreground mb-2">Resources</h1>
         <p className="text-muted-foreground mb-8">Manage your team, tools, and financial resources</p>
+
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <BookOpen className="w-5 h-5" />
+              Startup Metrics Knowledge Base
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-4">Learn key startup terminology and metrics</p>
+            <iframe
+              src="https://founderflowtermbook.floot.app/embed"
+              width="100%"
+              height="600"
+              style={{ border: "1px solid #e5e7eb", borderRadius: "8px" }}
+              title="Startup Metrics Knowledge Base"
+            />
+          </CardContent>
+        </Card>
 
         <div className="space-y-6">
           {resources.map((resource) => (
