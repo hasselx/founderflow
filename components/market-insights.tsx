@@ -60,26 +60,25 @@ export default function MarketInsights({ domains }: { domains?: string[] }) {
   const fetchInsights = async () => {
     setLoading(true)
     try {
-      const supabase = getSupabaseClient()
-      const { data, error } = await supabase
-        .from("market_insights")
-        .select("*")
-        .eq("domain", selectedDomain)
-        .order("created_at", { ascending: false })
-        .limit(10)
+      const response = await fetch(`/api/market/insights?domain=${encodeURIComponent(selectedDomain)}`)
 
-      if (error) throw error
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`)
+      }
 
+      const data = await response.json()
+
+      // Map API response to component format
       const trends =
-        data?.map((insight) => ({
-          title: insight.title,
-          description: insight.description || "",
-          source: insight.source || "FounderFlow",
-          url: insight.data?.url || "#",
-          date: insight.created_at,
+        data.trends?.map((trend: any) => ({
+          title: trend.title,
+          description: trend.description || "",
+          source: trend.source || "News Source",
+          url: trend.url || "#",
+          date: trend.date,
         })) || []
 
-      setInsights([{ domain: selectedDomain, trends, timestamp: new Date().toISOString() }])
+      setInsights([{ domain: selectedDomain, trends, timestamp: data.timestamp }])
     } catch (error) {
       console.error("[v0] Failed to fetch insights:", error)
       setInsights([])
@@ -133,7 +132,7 @@ export default function MarketInsights({ domains }: { domains?: string[] }) {
                     <span>{new Date(trend.date).toLocaleDateString()}</span>
                   </div>
                 </div>
-                {trend.url && (
+                {trend.url && trend.url !== "#" && (
                   <a href={trend.url} target="_blank" rel="noopener noreferrer" className="flex-shrink-0">
                     <Button variant="ghost" size="sm" className="gap-2">
                       Read <ExternalLink className="h-4 w-4" />
@@ -147,10 +146,12 @@ export default function MarketInsights({ domains }: { domains?: string[] }) {
       ) : (
         <Card className="p-12 text-center">
           <p className="text-muted-foreground">
-            {selectedDomain ? `No insights available for ${selectedDomain}. ` : "No domains selected. "}
-            Try adding more industries to your profile.
+            {selectedDomain ? `No market insights found for ${selectedDomain}. ` : "No domains selected. "}
+            {selectedDomain
+              ? "Try selecting a different industry or check back later."
+              : "Try adding industries to your profile."}
           </p>
-          {allDomains.length > 0 && (
+          {allDomains.length > 0 && selectedDomain && (
             <Button onClick={fetchInsights} className="mt-4 gap-2">
               <Loader2 className="h-4 w-4" />
               Retry
