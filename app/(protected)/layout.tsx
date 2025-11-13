@@ -56,6 +56,9 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
     if (href === "/project-planner") {
       return pathname === "/project-planner" || pathname.startsWith("/project-planner/")
     }
+    if (href === "/knowledge-base") {
+      return pathname === "/knowledge-base"
+    }
     return false
   }
 
@@ -90,11 +93,11 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
                   Project Planner
                 </Button>
               </Link>
-              <a href="https://founderflowtermbook.floot.app/embed" target="_blank" rel="noopener noreferrer">
-                <Button variant="ghost" className="gap-2">
+              <Link href="/knowledge-base">
+                <Button variant={isActive("/knowledge-base") ? "default" : "ghost"} className="gap-2">
                   Knowledge Base
                 </Button>
-              </a>
+              </Link>
             </div>
 
             {/* User Menu */}
