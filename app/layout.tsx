@@ -23,14 +23,39 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" style={{ scrollBehavior: "smooth" }}>
       <head>
         <link rel="icon" href="/favicon.jpg" type="image/png" />
         <meta name="theme-color" content="#1e3a8a" />
+        <script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js" />
       </head>
       <body className={`font-sans antialiased`}>
         {children}
         <Analytics />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              const lenis = new Lenis({
+                duration: 1.2,
+                easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+                direction: 'vertical',
+                gestureDirection: 'vertical',
+                smooth: true,
+                mouseMultiplier: 1,
+                smoothTouch: false,
+                touchMultiplier: 2,
+                infinite: false,
+              })
+
+              function raf(time) {
+                lenis.raf(time)
+                requestAnimationFrame(raf)
+              }
+
+              requestAnimationFrame(raf)
+            `,
+          }}
+        />
       </body>
     </html>
   )
