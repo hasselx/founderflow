@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft, Search } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { ArrowLeft, Search, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { getSupabaseClient } from "@/lib/supabase/client"
 
@@ -42,27 +43,30 @@ export default function ResearchPage() {
 
       setLoading(true)
       try {
-        const supabase = getSupabaseClient()
+        const domainToSearch = searchQuery || userDomains[0]
+        const response = await fetch(`/api/market/insights?domain=${encodeURIComponent(domainToSearch)}`)
 
-        let query = supabase.from("market_insights").select("*")
-
-        if (userDomains.length > 0) {
-          query = query.in("domain", userDomains)
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`)
         }
 
-        if (searchQuery) {
-          query = query.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`)
+        const data = await response.json()
+
+        // Map API response and optionally filter by search query
+        let results = data.trends || []
+
+        if (searchQuery && searchQuery !== userDomains[0]) {
+          results = results.filter(
+            (insight: any) =>
+              insight.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              insight.description?.toLowerCase().includes(searchQuery.toLowerCase()),
+          )
         }
 
-        const { data, error } = await query.limit(20)
-
-        if (error) {
-          console.error("[v0] Error fetching insights:", error)
-        } else {
-          setInsights(data || [])
-        }
+        setInsights(results)
       } catch (error) {
-        console.error("[v0] Error:", error)
+        console.error("[v0] Error fetching insights:", error)
+        setInsights([])
       } finally {
         setLoading(false)
       }
@@ -101,30 +105,36 @@ export default function ResearchPage() {
 
         <div className="grid grid-cols-1 gap-4">
           {loading ? (
-            <div className="text-center py-12 text-muted-foreground">Loading research data...</div>
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
           ) : insights.length === 0 ? (
             <Card>
               <CardContent className="pt-6 text-center text-muted-foreground">
-                No market insights found. Try different search terms or check back later.
+                No market insights found. Try searching for different topics or industries.
               </CardContent>
             </Card>
           ) : (
-            insights.map((insight) => (
-              <Card key={insight.id}>
+            insights.map((insight, index) => (
+              <Card key={index} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-2">
-                      <CardTitle>{insight.title}</CardTitle>
-                      <p className="text-sm text-muted-foreground">{insight.domain}</p>
+                    <div className="space-y-2 flex-1">
+                      <CardTitle className="line-clamp-2">{insight.title}</CardTitle>
+                      <p className="text-sm text-muted-foreground">{insight.source}</p>
                     </div>
-                    <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
-                      {insight.insight_type}
-                    </span>
+                    {insight.url && insight.url !== "#" && (
+                      <a href={insight.url} target="_blank" rel="noopener noreferrer">
+                        <Button variant="outline" size="sm">
+                          Read
+                        </Button>
+                      </a>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <p className="text-foreground">{insight.description}</p>
-                  {insight.source && <p className="text-sm text-muted-foreground">Source: {insight.source}</p>}
+                  <p className="text-foreground line-clamp-3">{insight.description}</p>
+                  <p className="text-xs text-muted-foreground">{new Date(insight.date).toLocaleDateString()}</p>
                 </CardContent>
               </Card>
             ))
