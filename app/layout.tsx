@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     "Transform your startup idea into a validated, data-backed plan with AI-powered insights and community support",
   generator: "v0.app",
   icons: {
-    icon: "/favicon.svg",
+    icon: "/favicon.jpg",
   },
 }
 
@@ -25,7 +25,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="icon" href="/favicon.jpg" type="image/png" />
+        <meta name="theme-color" content="#1e3a8a" />
       </head>
       <body className={`font-sans antialiased`}>
         {children}

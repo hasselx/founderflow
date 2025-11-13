@@ -1,8 +1,6 @@
 "use client"
 
 import React from "react"
-
-import { Zap } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { usePathname } from "next/navigation"
@@ -70,9 +68,7 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
           <div className="flex justify-between items-center h-20">
             {/* Logo */}
             <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <div className="w-10 h-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-lg">
-                <Zap className="w-6 h-6" />
-              </div>
+              <img src="/favicon.jpg" alt="FounderFlow Logo" className="w-10 h-10 rounded-lg" />
               <span className="text-xl font-bold text-foreground hidden sm:inline">FounderFlow</span>
             </Link>
 

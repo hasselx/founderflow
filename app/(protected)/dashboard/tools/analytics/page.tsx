@@ -1,13 +1,35 @@
+"use client"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { BarChart3, TrendingUp } from "lucide-react"
+import { useEffect, useState } from "react"
 
 export default function AnalyticsPage() {
-  const metrics = [
-    { label: "Project Progress", value: "65%", change: "+12% from last month" },
-    { label: "Task Completion", value: "42/50", change: "+8 tasks this week" },
-    { label: "Team Engagement", value: "8.5/10", change: "+2 new members" },
-    { label: "Funding Raised", value: "$150K", change: "+$50K this quarter" },
-  ]
+  const [metrics, setMetrics] = useState([
+    { label: "Project Progress", value: "—", change: "Loading..." },
+    { label: "Total Ideas", value: "—", change: "Loading..." },
+    { label: "Team Members", value: "—", change: "Loading..." },
+    { label: "Total Budget", value: "—", change: "Loading..." },
+  ])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchMetrics = async () => {
+      try {
+        const response = await fetch("/api/analytics/metrics")
+        const data = await response.json()
+        if (data.metrics) {
+          setMetrics(data.metrics)
+        }
+      } catch (error) {
+        console.error("[v0] Failed to fetch analytics:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchMetrics()
+  }, [])
 
   return (
     <div className="flex-1 p-6 md:p-8">
