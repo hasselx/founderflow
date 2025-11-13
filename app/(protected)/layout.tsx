@@ -90,6 +90,11 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
                   Project Planner
                 </Button>
               </Link>
+              <a href="https://founderflowtermbook.floot.app/embed" target="_blank" rel="noopener noreferrer">
+                <Button variant="ghost" className="gap-2">
+                  Knowledge Base
+                </Button>
+              </a>
             </div>
 
             {/* User Menu */}

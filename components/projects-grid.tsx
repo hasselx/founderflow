@@ -104,26 +104,22 @@ export default function ProjectsGrid() {
     try {
       const supabase = getSupabaseClient()
 
-      // Check if bucket exists and create if needed
+      try {
+        await fetch("/api/storage/create-bucket", { method: "POST" })
+      } catch (error) {
+        console.error("[v0] Error creating bucket via API:", error)
+      }
+
+      // Check if bucket exists
       const { data: buckets } = await supabase.storage.listBuckets()
       const bucketExists = buckets?.some((b) => b.name === "project-images")
 
       if (!bucketExists) {
-        // Try to create the bucket
-        const { error: createError } = await supabase.storage.createBucket("project-images", {
-          public: true,
-          fileSizeLimit: 5242880, // 5MB
-          allowedMimeTypes: ["image/*"],
-        })
-
-        if (createError) {
-          console.error("[v0] Error creating bucket:", createError)
-          alert(
-            "Unable to create storage bucket. Please contact your administrator to set up the 'project-images' bucket in Supabase Storage with public access.",
-          )
-          setUploadingImageFor(null)
-          return
-        }
+        alert(
+          "Storage bucket 'project-images' is not configured. Please contact your administrator to set up Supabase Storage.",
+        )
+        setUploadingImageFor(null)
+        return
       }
 
       const fileName = `${projectId}/${Date.now()}.${file.name.split(".").pop()}`
