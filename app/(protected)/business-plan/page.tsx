@@ -1,5 +1,3 @@
-"use client"
-
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { getSupabaseServerClient } from "@/lib/supabase/server"
@@ -51,12 +49,11 @@ export default async function BusinessPlanPage() {
                 )}
               </div>
               <p className="text-muted-foreground text-sm mb-4 line-clamp-2">{idea.description}</p>
-              <button
-                onClick={() => (window.location.href = `/business-plan/${idea.id}`)}
-                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium"
-              >
-                Create Business Plan
-              </button>
+              <Link href={`/business-plan/${idea.id}`}>
+                <button className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium">
+                  Create Business Plan
+                </button>
+              </Link>
             </div>
           ))}
         </div>
