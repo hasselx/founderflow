@@ -79,7 +79,7 @@ export default function TasksPage() {
           <Card>
             <CardContent className="pt-6 text-center">
               <p className="text-muted-foreground mb-4">No tasks yet. Create a project to get started!</p>
-              <Button onClick={() => (window.location.href = "/dashboard/ideas/new")}>
+              <Button onClick={() => (window.location.href = "/ideas/new")}>
                 <Plus className="w-4 h-4 mr-2" />
                 Create Project
               </Button>

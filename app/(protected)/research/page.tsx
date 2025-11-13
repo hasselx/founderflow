@@ -43,7 +43,7 @@ export default function ResearchPage() {
 
       setLoading(true)
       try {
-        const domainToSearch = searchQuery || userDomains[0]
+        const domainToSearch = searchQuery.trim() || userDomains[0]
         const response = await fetch(`/api/market/insights?domain=${encodeURIComponent(domainToSearch)}`)
 
         if (!response.ok) {
@@ -51,19 +51,7 @@ export default function ResearchPage() {
         }
 
         const data = await response.json()
-
-        // Map API response and optionally filter by search query
-        let results = data.trends || []
-
-        if (searchQuery && searchQuery !== userDomains[0]) {
-          results = results.filter(
-            (insight: any) =>
-              insight.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              insight.description?.toLowerCase().includes(searchQuery.toLowerCase()),
-          )
-        }
-
-        setInsights(results)
+        setInsights(data.trends || [])
       } catch (error) {
         console.error("[v0] Error fetching insights:", error)
         setInsights([])

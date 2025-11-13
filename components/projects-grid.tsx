@@ -166,7 +166,7 @@ export default function ProjectsGrid() {
     return (
       <div className="text-center py-12">
         <p className="text-muted-foreground mb-4">No projects yet. Start by creating your first startup idea!</p>
-        <Button onClick={() => (window.location.href = "/dashboard/ideas/new")}>Create Project</Button>
+        <Button onClick={() => (window.location.href = "/ideas/new")}>Create Project</Button>
       </div>
     )
   }
