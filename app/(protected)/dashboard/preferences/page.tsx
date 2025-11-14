@@ -72,19 +72,27 @@ export default function PreferencesPage() {
 
       if (!user) return
 
+      console.log("[v0] Saving preferences for user:", user.id, "domains:", domains)
+
       // Delete existing domains
       await supabase.from("user_domains").delete().eq("user_id", user.id)
 
       // Insert new domains
       if (domains.length > 0) {
-        await supabase.from("user_domains").insert(
+        const { error: insertError } = await supabase.from("user_domains").insert(
           domains.map((domain) => ({
             user_id: user.id,
             domain,
           })),
         )
+
+        if (insertError) {
+          console.error("[v0] Error inserting domains:", insertError)
+          throw insertError
+        }
       }
 
+      console.log("[v0] Preferences saved successfully")
       setMessage("Preferences updated!")
       setTimeout(() => setMessage(""), 2000)
     } catch (error) {

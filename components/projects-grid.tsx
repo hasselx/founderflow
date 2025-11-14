@@ -245,13 +245,11 @@ export default function ProjectsGrid() {
                       Edit
                     </Button>
                   </Link>
-                  <Button
-                    variant="outline"
-                    className="flex-1 bg-transparent"
-                    onClick={() => (window.location.href = `/project-planner?id=${project.id}`)}
-                  >
-                    View
-                  </Button>
+                  <Link href={`/project-planner?id=${project.id}`} className="flex-1">
+                    <Button variant="outline" className="w-full bg-transparent">
+                      View
+                    </Button>
+                  </Link>
                 </div>
               </CardContent>
             </Card>

@@ -26,13 +26,17 @@ export default function ProjectPlannerClient({ timelines, ideas }) {
       <aside className="w-64 border-r border-border bg-card p-6 flex-shrink-0 flex flex-col">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-bold text-foreground">Project Tools</h2>
-          <Link href="/dashboard">
-            <button className="text-muted-foreground hover:text-foreground transition-colors p-1 hover:bg-muted rounded">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-          </Link>
+          <button
+            className="text-muted-foreground hover:text-foreground transition-colors p-1 hover:bg-muted rounded"
+            onClick={() => {
+              // Collapse functionality can be added here if needed
+              console.log("[v0] Collapse button clicked - functionality can be added")
+            }}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
         </div>
         <nav className="space-y-2 flex-1">
           {projectTools.map((tool) => (

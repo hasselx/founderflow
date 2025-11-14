@@ -68,7 +68,7 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
           <div className="flex justify-between items-center h-20">
             {/* Logo */}
             <Link href="/dashboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 rounded-lg bg-[#0d2b81] flex items-center justify-center flex-shrink-0">
                 <span className="text-white font-bold text-base">FF</span>
               </div>
               <span className="text-xl font-bold text-foreground hidden sm:inline">FounderFlow</span>

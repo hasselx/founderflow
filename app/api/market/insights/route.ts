@@ -8,7 +8,10 @@ async function fetchMarketData(domain: string) {
     try {
       const marketstackRes = await fetch(
         `https://api.marketstack.com/v1/tickers?access_key=${process.env.MARKETSTACK_API_KEY}&search=${encodeURIComponent(domain)}&limit=5`,
-        { next: { revalidate: 3600 } },
+        { 
+          next: { revalidate: 3600 },
+          cache: 'no-store'
+        },
       )
 
       if (marketstackRes.ok) {
@@ -25,7 +28,7 @@ async function fetchMarketData(domain: string) {
         console.warn(`[v0] MarketStack API returned status ${marketstackRes.status}`)
       }
     } catch (fetchError) {
-      console.error("[v0] MarketStack fetch error:", fetchError)
+      console.warn("[v0] MarketStack unavailable - using NewsAPI only:", String(fetchError).substring(0, 100))
     }
 
     let newsData = { articles: [] }

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Loader2, TrendingUp, ExternalLink } from "lucide-react"
+import { Loader2, TrendingUp, ExternalLink } from 'lucide-react'
 import { getSupabaseClient } from "@/lib/supabase/client"
 
 interface Trend {
@@ -49,9 +49,6 @@ export default function MarketInsights({ domains }: { domains?: string[] }) {
     }
 
     fetchDomains()
-
-    const interval = setInterval(fetchDomains, 3000)
-    return () => clearInterval(interval)
   }, [])
 
   useEffect(() => {
