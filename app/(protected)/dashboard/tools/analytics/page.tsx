@@ -1,10 +1,12 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { BarChart3, TrendingUp } from "lucide-react"
+import { BarChart3, TrendingUp, ArrowLeft } from 'lucide-react'
 import { useEffect, useState } from "react"
+import { useRouter } from 'next/navigation'
 
 export default function AnalyticsPage() {
+  const router = useRouter()
   const [metrics, setMetrics] = useState([
     { label: "Project Progress", value: "—", change: "Loading..." },
     { label: "Total Ideas", value: "—", change: "Loading..." },
@@ -34,6 +36,11 @@ export default function AnalyticsPage() {
   return (
     <div className="flex-1 p-6 md:p-8">
       <div>
+        <button onClick={() => router.back()} className="flex items-center gap-2 text-primary hover:underline mb-6">
+          <ArrowLeft className="w-4 h-4" />
+          Back
+        </button>
+
         <h1 className="text-3xl font-bold text-foreground mb-2">Analytics</h1>
         <p className="text-muted-foreground mb-8">Track your project metrics and performance</p>
 

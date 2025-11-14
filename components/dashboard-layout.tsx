@@ -3,8 +3,8 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Calendar, CheckSquare, Users, BarChart3, Bell, Zap, LogOut } from "lucide-react"
+import { useRouter } from 'next/navigation'
+import { Calendar, CheckSquare, Users, BarChart3, Bell, Zap, LogOut } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { getSupabaseClient } from "@/lib/supabase/client"
 import {

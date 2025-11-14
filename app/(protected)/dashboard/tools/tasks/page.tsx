@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
-import { CheckSquare, Loader2, Plus } from "lucide-react"
+import { CheckSquare, Loader2, Plus, ArrowLeft } from 'lucide-react'
 import { getSupabaseClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
+import { useRouter } from 'next/navigation'
 
 interface Task {
   id: string
@@ -15,6 +16,7 @@ interface Task {
 }
 
 export default function TasksPage() {
+  const router = useRouter()
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -72,6 +74,11 @@ export default function TasksPage() {
   return (
     <div className="flex-1 p-6 md:p-8">
       <div>
+        <button onClick={() => router.back()} className="flex items-center gap-2 text-primary hover:underline mb-6">
+          <ArrowLeft className="w-4 h-4" />
+          Back
+        </button>
+
         <h1 className="text-3xl font-bold text-foreground mb-2">Tasks</h1>
         <p className="text-muted-foreground mb-8">Manage your project tasks and to-dos</p>
 

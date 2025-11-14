@@ -1,6 +1,8 @@
 import { getSupabaseServerClient } from "@/lib/supabase/server"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
+import { ArrowLeft } from 'lucide-react'
+import Link from "next/link"
 
 export default async function TimelinePage() {
   const supabase = await getSupabaseServerClient()
@@ -22,6 +24,11 @@ export default async function TimelinePage() {
   return (
     <div className="flex-1 p-6 md:p-8">
       <div>
+        <Link href="/dashboard" className="flex items-center gap-2 text-primary hover:underline mb-6">
+          <ArrowLeft className="w-4 h-4" />
+          Back
+        </Link>
+
         <h1 className="text-3xl font-bold text-foreground mb-2">Project Timeline</h1>
         <p className="text-muted-foreground mb-8">Track your project phases and milestones</p>
 

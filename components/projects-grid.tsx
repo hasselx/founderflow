@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { getSupabaseClient } from "@/lib/supabase/client"
 import { Loader2, Upload } from 'lucide-react'
+import Link from "next/link"
 
 interface Project {
   id: string
@@ -239,13 +240,11 @@ export default function ProjectsGrid() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button
-                    variant="default"
-                    className="flex-1"
-                    onClick={() => (window.location.href = `/business-plan/${project.id}`)}
-                  >
-                    Edit
-                  </Button>
+                  <Link href={`/business-plan/${project.id}`} className="flex-1">
+                    <Button variant="default" className="w-full">
+                      Edit
+                    </Button>
+                  </Link>
                   <Button
                     variant="outline"
                     className="flex-1 bg-transparent"

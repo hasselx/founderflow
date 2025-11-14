@@ -1,8 +1,9 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Users, Loader2 } from "lucide-react"
+import { Users, Loader2, ArrowLeft } from 'lucide-react'
 import { useEffect, useState } from "react"
+import { useRouter } from 'next/navigation'
 import { getSupabaseClient } from "@/lib/supabase/client"
 
 interface ResourceItem {
@@ -16,6 +17,7 @@ interface ResourceCategory {
 }
 
 export default function ResourcesPage() {
+  const router = useRouter()
   const [resources, setResources] = useState<ResourceCategory[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -93,6 +95,11 @@ export default function ResourcesPage() {
   return (
     <div className="flex-1 p-6 md:p-8">
       <div>
+        <button onClick={() => router.back()} className="flex items-center gap-2 text-primary hover:underline mb-6">
+          <ArrowLeft className="w-4 h-4" />
+          Back
+        </button>
+
         <h1 className="text-3xl font-bold text-foreground mb-2">Resources</h1>
         <p className="text-muted-foreground mb-8">Manage your team, tools, and financial resources</p>
 
