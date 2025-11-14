@@ -3,7 +3,7 @@
 import React from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { usePathname } from "next/navigation"
+import { usePathname } from 'next/navigation'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -67,8 +67,10 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
         <div className="max-w-full px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
             {/* Logo */}
-            <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <img src="/favicon.jpg" alt="FounderFlow Logo" className="w-10 h-10 rounded-lg" />
+            <Link href="/dashboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center flex-shrink-0">
+                <span className="text-white font-bold text-base">FF</span>
+              </div>
               <span className="text-xl font-bold text-foreground hidden sm:inline">FounderFlow</span>
             </Link>
 

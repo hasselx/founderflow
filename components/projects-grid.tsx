@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { getSupabaseClient } from "@/lib/supabase/client"
-import { Loader2, Upload } from "lucide-react"
+import { Loader2, Upload } from 'lucide-react'
 
 interface Project {
   id: string
@@ -242,7 +242,7 @@ export default function ProjectsGrid() {
                   <Button
                     variant="default"
                     className="flex-1"
-                    onClick={() => (window.location.href = `/business-plan?id=${project.id}`)}
+                    onClick={() => (window.location.href = `/business-plan/${project.id}`)}
                   >
                     Edit
                   </Button>

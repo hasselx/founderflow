@@ -1,6 +1,6 @@
 "use client"
 
-import { Calendar, CheckSquare, Users, BarChart3, Bell } from "lucide-react"
+import { Calendar, CheckSquare, Users, BarChart3, Bell } from 'lucide-react'
 import Link from "next/link"
 
 export default function ProjectPlannerClient({ timelines, ideas }) {
@@ -23,16 +23,18 @@ export default function ProjectPlannerClient({ timelines, ideas }) {
   return (
     <div className="flex min-h-screen bg-background">
       {/* Left Sidebar - Project Tools */}
-      <aside className="w-64 border-r border-border bg-card p-6 flex-shrink-0">
+      <aside className="w-64 border-r border-border bg-card p-6 flex-shrink-0 flex flex-col">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-bold text-foreground">Project Tools</h2>
-          <button className="text-muted-foreground hover:text-foreground">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
+          <Link href="/dashboard">
+            <button className="text-muted-foreground hover:text-foreground transition-colors p-1 hover:bg-muted rounded">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+          </Link>
         </div>
-        <nav className="space-y-2">
+        <nav className="space-y-2 flex-1">
           {projectTools.map((tool) => (
             <Link
               key={tool.name}

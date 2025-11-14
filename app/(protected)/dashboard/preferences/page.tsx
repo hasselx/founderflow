@@ -52,10 +52,14 @@ export default function PreferencesPage() {
   }, [])
 
   const handleDomainToggle = (domain: string) => {
-    setSelectedDomains((prev) => (prev.includes(domain) ? prev.filter((d) => d !== domain) : [...prev, domain]))
+    setSelectedDomains((prev) => {
+      const updated = prev.includes(domain) ? prev.filter((d) => d !== domain) : [...prev, domain]
+      handleSavePreferences(updated)
+      return updated
+    })
   }
 
-  const handleSave = async () => {
+  const handleSavePreferences = async (domains: string[]) => {
     try {
       setSaving(true)
       setMessage("")
@@ -71,17 +75,17 @@ export default function PreferencesPage() {
       await supabase.from("user_domains").delete().eq("user_id", user.id)
 
       // Insert new domains
-      if (selectedDomains.length > 0) {
+      if (domains.length > 0) {
         await supabase.from("user_domains").insert(
-          selectedDomains.map((domain) => ({
+          domains.map((domain) => ({
             user_id: user.id,
             domain,
           })),
         )
       }
 
-      setMessage("Preferences saved successfully!")
-      setTimeout(() => setMessage(""), 3000)
+      setMessage("Preferences updated!")
+      setTimeout(() => setMessage(""), 2000)
     } catch (error) {
       console.error("[v0] Error saving preferences:", error)
       setMessage("Error saving preferences. Please try again.")
@@ -142,11 +146,11 @@ export default function PreferencesPage() {
             </div>
           )}
 
-          <div className="flex gap-4 pt-4 border-t border-border">
+          {/* <div className="flex gap-4 pt-4 border-t border-border">
             <Button onClick={handleSave} disabled={saving} className="flex-1">
               {saving ? "Saving..." : "Save Preferences"}
             </Button>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>
