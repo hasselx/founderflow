@@ -24,7 +24,7 @@ export default async function TimelinePage() {
   return (
     <div className="flex-1 p-6 md:p-8">
       <div>
-        <Link href="/dashboard" className="flex items-center gap-2 text-primary hover:underline mb-6">
+        <Link href="/project-planner" className="flex items-center gap-2 text-primary hover:underline mb-6">
           <ArrowLeft className="w-4 h-4" />
           Back
         </Link>

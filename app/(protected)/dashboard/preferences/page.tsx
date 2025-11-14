@@ -51,12 +51,13 @@ export default function PreferencesPage() {
     fetchUserDomains()
   }, [])
 
-  const handleDomainToggle = (domain: string) => {
-    setSelectedDomains((prev) => {
-      const updated = prev.includes(domain) ? prev.filter((d) => d !== domain) : [...prev, domain]
-      handleSavePreferences(updated)
-      return updated
-    })
+  const handleDomainToggle = async (domain: string) => {
+    const updated = selectedDomains.includes(domain)
+      ? selectedDomains.filter((d) => d !== domain)
+      : [...selectedDomains, domain]
+    
+    setSelectedDomains(updated)
+    await handleSavePreferences(updated)
   }
 
   const handleSavePreferences = async (domains: string[]) => {
@@ -127,6 +128,7 @@ export default function PreferencesPage() {
                   <Checkbox
                     checked={selectedDomains.includes(domain)}
                     onCheckedChange={() => handleDomainToggle(domain)}
+                    disabled={saving}
                   />
                   <span className="text-foreground font-medium">{domain}</span>
                 </label>
@@ -137,7 +139,7 @@ export default function PreferencesPage() {
           {message && (
             <div
               className={`p-4 rounded-lg text-sm ${
-                message.includes("successfully")
+                message.includes("successfully") || message.includes("updated")
                   ? "bg-green-500/10 text-green-700"
                   : "bg-destructive/10 text-destructive"
               }`}
@@ -145,12 +147,6 @@ export default function PreferencesPage() {
               {message}
             </div>
           )}
-
-          {/* <div className="flex gap-4 pt-4 border-t border-border">
-            <Button onClick={handleSave} disabled={saving} className="flex-1">
-              {saving ? "Saving..." : "Save Preferences"}
-            </Button>
-          </div> */}
         </div>
       </div>
     </div>

@@ -2,7 +2,6 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from "@vercel/analytics/next"
-import Link from "next/link"
 import "./globals.css"
 
 const _geist = Geist({ subsets: ["latin"] })
@@ -31,13 +30,6 @@ export default function RootLayout({
         <script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js" />
       </head>
       <body className={`font-sans antialiased`}>
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center flex-shrink-0">
-            <span className="text-white font-bold text-base">FF</span>
-          </div>
-          <span className="text-xl font-bold text-foreground hidden sm:inline">FounderFlow</span>
-        </Link>
         {children}
         <Analytics />
         <script
