@@ -116,6 +116,7 @@ export default function BusinessPlanEditor({
     setError("")
 
     try {
+      console.log("[v0] Adding phase with data:", newPhase)
       const res = await fetch(`/api/business-plan/${formData.id}/timeline`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -125,13 +126,15 @@ export default function BusinessPlanEditor({
         }),
       })
 
+      const data = await res.json()
+      console.log("[v0] API Response:", data)
+
       if (!res.ok) {
-        const data = await res.json()
+        console.error("[v0] API Error:", data)
         setError(data.error || "Failed to add phase")
         return
       }
 
-      const data = await res.json()
       setPhases([...phases, data.phase])
       setNewPhase({
         phase_name: "",
@@ -142,9 +145,11 @@ export default function BusinessPlanEditor({
         resources_needed: "",
       })
       setAddingPhase(false)
+      setSuccess(true)
+      setTimeout(() => setSuccess(false), 3000)
     } catch (err) {
       console.error("[v0] Add phase error:", err)
-      setError("Failed to add phase")
+      setError(err instanceof Error ? err.message : "Failed to add phase")
     } finally {
       setSaving(false)
     }
@@ -349,9 +354,10 @@ export default function BusinessPlanEditor({
                     name="business_model"
                     value={formData.business_model || ""}
                     onChange={handleInputChange}
+                    aria-label="Business Model Type"
                     className="w-full mt-2 px-3 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                   >
-                    <option value="">Select a model</option>
+                    <option value="" disabled>Select a model</option>
                     <option value="SaaS">SaaS</option>
                     <option value="Freemium">Freemium</option>
                     <option value="Marketplace">Marketplace</option>
