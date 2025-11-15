@@ -92,3 +92,125 @@ export async function POST(
     )
   }
 }
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+    const supabase = await getSupabaseServerClient()
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const body = await request.json()
+
+    const { data: phase, error } = await supabase
+      .from("project_timelines")
+      .update({
+        phase_name: body.phase_name,
+        start_date: body.start_date,
+        end_date: body.end_date,
+        objectives: body.objectives,
+        deliverables: body.deliverables,
+        resources_needed: body.resources_needed,
+        status: body.status,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", body.id)
+      .select()
+      .single()
+
+    if (error) {
+      console.error("[v0] Update phase error:", error)
+      throw error
+    }
+
+    return NextResponse.json({ phase })
+  } catch (error) {
+    console.error("[v0] Update phase error:", error)
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Failed to update phase" },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const supabase = await getSupabaseServerClient()
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(request.url)
+    const phaseId = searchParams.get("phaseId")
+
+    if (!phaseId) {
+      return NextResponse.json({ error: "Phase ID required" }, { status: 400 })
+    }
+
+    const { error } = await supabase
+      .from("project_timelines")
+      .delete()
+      .eq("id", phaseId)
+
+    if (error) throw error
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error("[v0] Delete phase error:", error)
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Failed to delete phase" },
+      { status: 500 }
+    )
+  }
+}
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+    const supabase = await getSupabaseServerClient()
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const { data: phases, error } = await supabase
+      .from("project_timelines")
+      .select("*")
+      .eq("idea_id", id)
+      .order("phase_number", { ascending: true })
+
+    if (error) throw error
+
+    return NextResponse.json({ phases })
+  } catch (error) {
+    console.error("[v0] Get phases error:", error)
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Failed to fetch phases" },
+      { status: 500 }
+    )
+  }
+}

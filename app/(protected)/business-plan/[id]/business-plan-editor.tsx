@@ -2,11 +2,26 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import { ArrowLeft, Edit, Save, X, Loader2, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Edit, Save, X, Loader2, AlertCircle, Plus, Pencil, Trash2 } from 'lucide-react'
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 interface IdeaData {
   id: string
@@ -34,6 +49,20 @@ interface TimelinePhase {
   status: string
 }
 
+interface Task {
+  id: string
+  timeline_id: string
+  title: string
+  description: string | null
+  status: string
+  completion_percentage: number
+  assigned_to: string | null
+  priority: string
+  due_date: string | null
+  created_at: string
+  updated_at: string
+}
+
 interface BusinessPlanEditorProps {
   initialIdea: IdeaData
   timelinePhases: TimelinePhase[]
@@ -57,6 +86,19 @@ export default function BusinessPlanEditor({
     objectives: "",
     deliverables: "",
     resources_needed: "",
+  })
+  const [editingPhase, setEditingPhase] = useState<TimelinePhase | null>(null)
+  const [editPhaseDialogOpen, setEditPhaseDialogOpen] = useState(false)
+  const [taskDialogOpen, setTaskDialogOpen] = useState(false)
+  const [selectedPhaseForTasks, setSelectedPhaseForTasks] = useState<string | null>(null)
+  const [tasks, setTasks] = useState<Record<string, Task[]>>({})
+  const [newTask, setNewTask] = useState({
+    title: "",
+    description: "",
+    completion_percentage: 0,
+    status: "pending",
+    priority: "medium",
+    due_date: "",
   })
 
   const handleInputChange = (
@@ -155,9 +197,177 @@ export default function BusinessPlanEditor({
     }
   }
 
+  const handleEditPhase = (phase: TimelinePhase) => {
+    setEditingPhase({ ...phase })
+    setEditPhaseDialogOpen(true)
+  }
+
+  const handleSavePhase = async () => {
+    if (!editingPhase) return
+
+    setSaving(true)
+    setError("")
+
+    try {
+      const res = await fetch(`/api/business-plan/${formData.id}/timeline`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editingPhase),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error || "Failed to update phase")
+        return
+      }
+
+      setPhases(phases.map(p => p.id === editingPhase.id ? data.phase : p))
+      setEditPhaseDialogOpen(false)
+      setEditingPhase(null)
+      setSuccess(true)
+      setTimeout(() => setSuccess(false), 3000)
+    } catch (err) {
+      console.error("[v0] Update phase error:", err)
+      setError("Failed to update phase")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDeletePhase = async (phaseId: string) => {
+    if (!confirm("Are you sure you want to delete this phase?")) return
+
+    setSaving(true)
+    setError("")
+
+    try {
+      const res = await fetch(
+        `/api/business-plan/${formData.id}/timeline?phaseId=${phaseId}`,
+        { method: "DELETE" }
+      )
+
+      if (!res.ok) {
+        const data = await res.json()
+        setError(data.error || "Failed to delete phase")
+        return
+      }
+
+      setPhases(phases.filter(p => p.id !== phaseId))
+      setSuccess(true)
+      setTimeout(() => setSuccess(false), 3000)
+    } catch (err) {
+      console.error("[v0] Delete phase error:", err)
+      setError("Failed to delete phase")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const loadTasks = async (phaseId: string) => {
+    try {
+      const res = await fetch(
+        `/api/business-plan/${formData.id}/timeline/${phaseId}/tasks`
+      )
+      const data = await res.json()
+      
+      if (res.ok) {
+        setTasks(prev => ({ ...prev, [phaseId]: data.tasks }))
+      }
+    } catch (err) {
+      console.error("[v0] Load tasks error:", err)
+    }
+  }
+
+  const handleAddTask = (phaseId: string) => {
+    setSelectedPhaseForTasks(phaseId)
+    setTaskDialogOpen(true)
+    loadTasks(phaseId)
+  }
+
+  const handleSaveTask = async () => {
+    if (!selectedPhaseForTasks || !newTask.title) {
+      setError("Please fill in the task title")
+      return
+    }
+
+    setSaving(true)
+    setError("")
+
+    try {
+      const res = await fetch(
+        `/api/business-plan/${formData.id}/timeline/${selectedPhaseForTasks}/tasks`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newTask),
+        }
+      )
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error || "Failed to add task")
+        return
+      }
+
+      await loadTasks(selectedPhaseForTasks)
+      setNewTask({
+        title: "",
+        description: "",
+        completion_percentage: 0,
+        status: "pending",
+        priority: "medium",
+        due_date: "",
+      })
+      setSuccess(true)
+      setTimeout(() => setSuccess(false), 3000)
+    } catch (err) {
+      console.error("[v0] Add task error:", err)
+      setError("Failed to add task")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleUpdateTaskCompletion = async (
+    phaseId: string,
+    task: Task,
+    newPercentage: number
+  ) => {
+    try {
+      const res = await fetch(
+        `/api/business-plan/${formData.id}/timeline/${phaseId}/tasks`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...task,
+            completion_percentage: newPercentage,
+          }),
+        }
+      )
+
+      if (res.ok) {
+        await loadTasks(phaseId)
+        // Reload phases to update progress
+        const phasesRes = await fetch(`/api/business-plan/${formData.id}/timeline`)
+        const phasesData = await phasesRes.json()
+        if (phasesRes.ok) {
+          setPhases(phasesData.phases)
+        }
+      }
+    } catch (err) {
+      console.error("[v0] Update task completion error:", err)
+    }
+  }
+
+  useEffect(() => {
+    phases.forEach(phase => loadTasks(phase.id))
+  }, [phases.length])
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Back Button */}
       <Link
         href="/business-plan"
         className="flex items-center gap-2 text-primary hover:underline mb-6"
@@ -166,7 +376,6 @@ export default function BusinessPlanEditor({
         Back to Business Plans
       </Link>
 
-      {/* Header with Edit/Save Buttons */}
       <div className="flex items-start justify-between gap-4 mb-8">
         <div className="flex-1">
           {isEditing ? (
@@ -239,7 +448,6 @@ export default function BusinessPlanEditor({
         </div>
       </div>
 
-      {/* Error and Success Messages */}
       {error && (
         <div className="mb-6 p-4 rounded-lg bg-destructive/10 border border-destructive/20 flex gap-3">
           <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
@@ -253,11 +461,8 @@ export default function BusinessPlanEditor({
         </div>
       )}
 
-      {/* Main Content */}
       <div className="space-y-8">
-        {/* Executive Summary & Business Model */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Executive Summary */}
           <div className="bg-card border border-border rounded-lg p-6">
             <h2 className="text-xl font-semibold text-foreground mb-4">
               Executive Summary
@@ -320,7 +525,6 @@ export default function BusinessPlanEditor({
             </div>
           </div>
 
-          {/* Business Model */}
           <div className="bg-card border border-border rounded-lg p-6">
             <h2 className="text-xl font-semibold text-foreground mb-4">
               Business Model
@@ -421,24 +625,20 @@ export default function BusinessPlanEditor({
           </div>
         </div>
 
-        {/* Project Timeline Phases */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-semibold text-foreground">
               Project Timeline & Resources
             </h2>
-            {isEditing && (
-              <Button
-                onClick={() => setAddingPhase(!addingPhase)}
-                size="sm"
-                variant="outline"
-              >
-                {addingPhase ? "Cancel" : "Add Phase"}
-              </Button>
-            )}
+            <Button
+              onClick={() => setAddingPhase(!addingPhase)}
+              size="sm"
+              variant="outline"
+            >
+              {addingPhase ? "Cancel" : "Add Phase"}
+            </Button>
           </div>
 
-          {/* Add Phase Form */}
           {addingPhase && (
             <div className="bg-card border border-border rounded-lg p-6 space-y-4">
               <h3 className="font-semibold text-foreground">Add New Phase</h3>
@@ -539,16 +739,15 @@ export default function BusinessPlanEditor({
             </div>
           )}
 
-          {/* Phases List */}
           <div className="space-y-4">
             {phases.length > 0 ? (
-              phases.map((phase, idx) => (
+              phases.map((phase) => (
                 <div
                   key={phase.id}
-                  className="bg-card border border-border rounded-lg p-6 space-y-3"
+                  className="bg-card border border-border rounded-lg p-6 space-y-4"
                 >
                   <div className="flex items-start justify-between">
-                    <div>
+                    <div className="flex-1">
                       <h3 className="font-semibold text-foreground text-lg">
                         Phase {phase.phase_number}: {phase.phase_name}
                       </h3>
@@ -557,8 +756,24 @@ export default function BusinessPlanEditor({
                         {new Date(phase.end_date).toLocaleDateString()}
                       </p>
                     </div>
-                    <div className="text-sm font-medium px-3 py-1 rounded-full bg-primary/10 text-primary">
-                      {phase.progress_percentage}% Complete
+                    <div className="flex items-center gap-2">
+                      <div className="text-sm font-medium px-3 py-1 rounded-full bg-primary/10 text-primary">
+                        {phase.progress_percentage}% Complete
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleEditPhase(phase)}
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleDeletePhase(phase.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
                   </div>
 
@@ -594,6 +809,62 @@ export default function BusinessPlanEditor({
                       </div>
                     )}
                   </div>
+
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-sm font-medium text-foreground">Tasks</h4>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleAddTask(phase.id)}
+                      >
+                        <Plus className="w-4 h-4 mr-1" />
+                        Add Task
+                      </Button>
+                    </div>
+                    {tasks[phase.id] && tasks[phase.id].length > 0 ? (
+                      <div className="space-y-2">
+                        {tasks[phase.id].map((task) => (
+                          <div
+                            key={task.id}
+                            className="flex items-center gap-3 p-3 bg-background rounded-lg border border-border"
+                          >
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-foreground">
+                                {task.title}
+                              </p>
+                              {task.description && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {task.description}
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="number"
+                                min="0"
+                                max="100"
+                                value={task.completion_percentage}
+                                onChange={(e) =>
+                                  handleUpdateTaskCompletion(
+                                    phase.id,
+                                    task,
+                                    Number.parseInt(e.target.value) || 0
+                                  )
+                                }
+                                className="w-20 text-sm"
+                              />
+                              <span className="text-xs text-muted-foreground">%</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        No tasks yet. Add one to get started!
+                      </p>
+                    )}
+                  </div>
                 </div>
               ))
             ) : (
@@ -604,7 +875,6 @@ export default function BusinessPlanEditor({
           </div>
         </div>
 
-        {/* Info Box */}
         <div className="bg-accent/10 border border-accent rounded-lg p-6">
           <p className="text-sm text-foreground">
             💡 <strong>Tip:</strong> Use the Edit button to update your business
@@ -614,6 +884,214 @@ export default function BusinessPlanEditor({
           </p>
         </div>
       </div>
+
+      <Dialog open={editPhaseDialogOpen} onOpenChange={setEditPhaseDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Phase</DialogTitle>
+            <DialogDescription>
+              Update the phase details and timeline
+            </DialogDescription>
+          </DialogHeader>
+          {editingPhase && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Phase Name</label>
+                  <Input
+                    value={editingPhase.phase_name}
+                    onChange={(e) =>
+                      setEditingPhase({ ...editingPhase, phase_name: e.target.value })
+                    }
+                    className="mt-2"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Status</label>
+                  <Select
+                    value={editingPhase.status}
+                    onValueChange={(value) =>
+                      setEditingPhase({ ...editingPhase, status: value })
+                    }
+                  >
+                    <SelectTrigger className="mt-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="planned">Planned</SelectItem>
+                      <SelectItem value="in_progress">In Progress</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Start Date</label>
+                  <Input
+                    type="date"
+                    value={editingPhase.start_date}
+                    onChange={(e) =>
+                      setEditingPhase({ ...editingPhase, start_date: e.target.value })
+                    }
+                    className="mt-2"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">End Date</label>
+                  <Input
+                    type="date"
+                    value={editingPhase.end_date}
+                    onChange={(e) =>
+                      setEditingPhase({ ...editingPhase, end_date: e.target.value })
+                    }
+                    className="mt-2"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Objectives</label>
+                <Textarea
+                  value={editingPhase.objectives || ""}
+                  onChange={(e) =>
+                    setEditingPhase({ ...editingPhase, objectives: e.target.value })
+                  }
+                  rows={3}
+                  className="mt-2"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Deliverables</label>
+                <Textarea
+                  value={editingPhase.deliverables || ""}
+                  onChange={(e) =>
+                    setEditingPhase({ ...editingPhase, deliverables: e.target.value })
+                  }
+                  rows={3}
+                  className="mt-2"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Resources Needed</label>
+                <Textarea
+                  value={editingPhase.resources_needed || ""}
+                  onChange={(e) =>
+                    setEditingPhase({
+                      ...editingPhase,
+                      resources_needed: e.target.value,
+                    })
+                  }
+                  rows={3}
+                  className="mt-2"
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditPhaseDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSavePhase} disabled={saving}>
+              {saving ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={taskDialogOpen} onOpenChange={setTaskDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Manage Tasks</DialogTitle>
+            <DialogDescription>
+              Add and track tasks for this phase
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Task Title</label>
+              <Input
+                value={newTask.title}
+                onChange={(e) =>
+                  setNewTask({ ...newTask, title: e.target.value })
+                }
+                placeholder="e.g., Design user interface"
+                className="mt-2"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Description</label>
+              <Textarea
+                value={newTask.description}
+                onChange={(e) =>
+                  setNewTask({ ...newTask, description: e.target.value })
+                }
+                placeholder="Describe the task..."
+                rows={2}
+                className="mt-2"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Priority</label>
+                <Select
+                  value={newTask.priority}
+                  onValueChange={(value) =>
+                    setNewTask({ ...newTask, priority: value })
+                  }
+                >
+                  <SelectTrigger className="mt-2">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="urgent">Urgent</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Due Date</label>
+                <Input
+                  type="date"
+                  value={newTask.due_date}
+                  onChange={(e) =>
+                    setNewTask({ ...newTask, due_date: e.target.value })
+                  }
+                  className="mt-2"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium">
+                Completion: {newTask.completion_percentage}%
+              </label>
+              <Input
+                type="range"
+                min="0"
+                max="100"
+                step="5"
+                value={newTask.completion_percentage}
+                onChange={(e) =>
+                  setNewTask({
+                    ...newTask,
+                    completion_percentage: Number.parseInt(e.target.value),
+                  })
+                }
+                className="mt-2"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTaskDialogOpen(false)}>
+              Close
+            </Button>
+            <Button onClick={handleSaveTask} disabled={saving}>
+              {saving ? "Adding..." : "Add Task"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
