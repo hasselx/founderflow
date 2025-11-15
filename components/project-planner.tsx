@@ -5,8 +5,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Circle, Plus, Sparkles, AlertCircle } from "lucide-react"
+import { Circle, Plus, Sparkles, AlertCircle, Edit2, Trash2, X } from 'lucide-react'
 import { Alert, AlertDescription } from "@/components/ui/alert"
+
+interface Phase {
+  id: string
+  title: string
+  status: "in progress" | "upcoming" | "completed"
+  dateRange: string
+  tasks: string
+  progress: number
+  objectives?: string
+  deliverables?: string
+}
 
 interface TimelineData {
   phases: string
@@ -19,30 +30,51 @@ export default function ProjectPlanner() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedTimeline, setGeneratedTimeline] = useState<TimelineData | null>(null)
   const [error, setError] = useState<string | null>(null)
-
-  const phases = [
+  
+  const [phases, setPhases] = useState<Phase[]>([
     {
+      id: "1",
       title: "Market Research & Validation",
       status: "in progress",
       dateRange: "Nov 4 - Nov 18",
       tasks: "5/8 tasks",
       progress: 65,
+      objectives: "Validate market demand",
+      deliverables: "Market research report"
     },
     {
+      id: "2",
       title: "MVP Development",
       status: "upcoming",
       dateRange: "Nov 19 - Dec 9",
       tasks: "0/12 tasks",
       progress: 0,
+      objectives: "Build minimum viable product",
+      deliverables: "MVP application"
     },
     {
+      id: "3",
       title: "User Testing & Feedback",
       status: "upcoming",
       dateRange: "Dec 10 - Dec 24",
       tasks: "0/6 tasks",
       progress: 0,
+      objectives: "Gather user feedback",
+      deliverables: "Feedback report"
     },
-  ]
+  ])
+
+  const [showAddPhaseModal, setShowAddPhaseModal] = useState(false)
+  const [editingPhase, setEditingPhase] = useState<Phase | null>(null)
+  const [newPhaseData, setNewPhaseData] = useState({
+    title: "",
+    status: "upcoming" as const,
+    dateRange: "",
+    tasks: "0/0 tasks",
+    progress: 0,
+    objectives: "",
+    deliverables: "",
+  })
 
   const handleGenerateTimeline = async () => {
     if (!projectName.trim()) {
@@ -74,6 +106,94 @@ export default function ProjectPlanner() {
     } finally {
       setIsGenerating(false)
     }
+  }
+
+  const handleAddPhase = () => {
+    if (!newPhaseData.title.trim()) {
+      setError("Please enter a phase title")
+      return
+    }
+
+    const phase: Phase = {
+      id: Date.now().toString(),
+      ...newPhaseData,
+    }
+
+    setPhases([...phases, phase])
+    setNewPhaseData({
+      title: "",
+      status: "upcoming",
+      dateRange: "",
+      tasks: "0/0 tasks",
+      progress: 0,
+      objectives: "",
+      deliverables: "",
+    })
+    setShowAddPhaseModal(false)
+  }
+
+  const handleEditPhase = (phase: Phase) => {
+    setEditingPhase(phase)
+    setNewPhaseData({
+      title: phase.title,
+      status: phase.status,
+      dateRange: phase.dateRange,
+      tasks: phase.tasks,
+      progress: phase.progress,
+      objectives: phase.objectives || "",
+      deliverables: phase.deliverables || "",
+    })
+    setShowAddPhaseModal(true)
+  }
+
+  const handleSavePhase = () => {
+    if (!newPhaseData.title.trim()) {
+      setError("Please enter a phase title")
+      return
+    }
+
+    if (editingPhase) {
+      setPhases(
+        phases.map((p) =>
+          p.id === editingPhase.id
+            ? { ...p, ...newPhaseData }
+            : p
+        )
+      )
+    } else {
+      handleAddPhase()
+      return
+    }
+
+    setNewPhaseData({
+      title: "",
+      status: "upcoming",
+      dateRange: "",
+      tasks: "0/0 tasks",
+      progress: 0,
+      objectives: "",
+      deliverables: "",
+    })
+    setEditingPhase(null)
+    setShowAddPhaseModal(false)
+  }
+
+  const handleDeletePhase = (id: string) => {
+    setPhases(phases.filter((p) => p.id !== id))
+  }
+
+  const handleCloseModal = () => {
+    setShowAddPhaseModal(false)
+    setEditingPhase(null)
+    setNewPhaseData({
+      title: "",
+      status: "upcoming",
+      dateRange: "",
+      tasks: "0/0 tasks",
+      progress: 0,
+      objectives: "",
+      deliverables: "",
+    })
   }
 
   return (
@@ -182,7 +302,7 @@ export default function ProjectPlanner() {
               <CardTitle>Project Timeline</CardTitle>
               <CardDescription>Track progress across all project phases</CardDescription>
             </div>
-            <Button className="gap-2">
+            <Button onClick={() => setShowAddPhaseModal(true)} className="gap-2">
               <Plus className="w-4 h-4" />
               Add Phase
             </Button>
@@ -191,7 +311,7 @@ export default function ProjectPlanner() {
         <CardContent>
           <div className="space-y-6">
             {phases.map((phase, idx) => (
-              <div key={idx} className="relative">
+              <div key={phase.id} className="relative">
                 <div className="flex gap-4">
                   <div className="flex flex-col items-center">
                     <Circle className="w-5 h-5 text-primary mb-4" fill="currentColor" />
@@ -203,8 +323,27 @@ export default function ProjectPlanner() {
                         <div>
                           <h3 className="font-semibold text-foreground">{phase.title}</h3>
                           <Badge variant="secondary" className="mt-1 text-xs">
-                            {phase.status === "in progress" ? "in progress" : "upcoming"}
+                            {phase.status === "in progress" ? "in progress" : phase.status}
                           </Badge>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleEditPhase(phase)}
+                            title="Edit phase"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDeletePhase(phase.id)}
+                            title="Delete phase"
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </div>
                       </div>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3 text-sm">
@@ -225,7 +364,7 @@ export default function ProjectPlanner() {
                           </div>
                         </div>
                       </div>
-                      <Button size="sm" variant="outline">
+                      <Button size="sm" variant="outline" onClick={() => console.log("[v0] View tasks for phase:", phase.id)}>
                         View Tasks
                       </Button>
                     </div>
@@ -233,13 +372,96 @@ export default function ProjectPlanner() {
                 </div>
               </div>
             ))}
-            <Button variant="outline" className="w-full gap-2 bg-transparent">
+            <Button 
+              variant="outline" 
+              className="w-full gap-2 bg-transparent"
+              onClick={() => console.log("[v0] Add task clicked")}
+            >
               <Plus className="w-4 h-4" />
               Add Task
             </Button>
           </div>
         </CardContent>
       </Card>
+
+      {showAddPhaseModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <CardTitle>{editingPhase ? "Edit Phase" : "Add New Phase"}</CardTitle>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleCloseModal}
+                className="h-8 w-8 p-0"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Phase Title</label>
+                <Input
+                  value={newPhaseData.title}
+                  onChange={(e) => setNewPhaseData({...newPhaseData, title: e.target.value})}
+                  placeholder="e.g., MVP Development"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Status</label>
+                <select
+                  value={newPhaseData.status}
+                  onChange={(e) => setNewPhaseData({...newPhaseData, status: e.target.value as Phase["status"]})}
+                  className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
+                >
+                  <option value="upcoming">Upcoming</option>
+                  <option value="in progress">In Progress</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Date Range</label>
+                <Input
+                  value={newPhaseData.dateRange}
+                  onChange={(e) => setNewPhaseData({...newPhaseData, dateRange: e.target.value})}
+                  placeholder="e.g., Nov 19 - Dec 9"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Objectives</label>
+                <Input
+                  value={newPhaseData.objectives}
+                  onChange={(e) => setNewPhaseData({...newPhaseData, objectives: e.target.value})}
+                  placeholder="Phase objectives"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Deliverables</label>
+                <Input
+                  value={newPhaseData.deliverables}
+                  onChange={(e) => setNewPhaseData({...newPhaseData, deliverables: e.target.value})}
+                  placeholder="Expected deliverables"
+                />
+              </div>
+              <div className="flex gap-2 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={handleCloseModal}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSavePhase}
+                  className="flex-1"
+                >
+                  {editingPhase ? "Save Changes" : "Add Phase"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }
