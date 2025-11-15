@@ -63,6 +63,7 @@ export async function POST(
         objectives: body.objectives || "",
         deliverables: body.deliverables || "",
         resources_needed: body.resources_needed || "",
+        total_tasks: body.total_tasks || 0,
         status: "planned",
         progress_percentage: 0,
       })

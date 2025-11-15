@@ -44,6 +44,7 @@ export async function POST(
         description: body.description || null,
         status: body.status || "pending",
         completion_percentage: body.completion_percentage || 0,
+        contribution_percentage: body.contribution_percentage || 0,
         assigned_to: body.assigned_to || null,
         priority: body.priority || "medium",
         due_date: body.due_date || null,
@@ -57,7 +58,7 @@ export async function POST(
     }
 
     // Update phase progress based on task completion
-    await updatePhaseProgress(supabase, timelineId)
+    await updatePhaseProgressWeighted(supabase, timelineId)
 
     return NextResponse.json({ task })
   } catch (error) {
@@ -85,6 +86,7 @@ export async function PUT(
         description: body.description,
         status: body.status,
         completion_percentage: body.completion_percentage,
+        contribution_percentage: body.contribution_percentage,
         assigned_to: body.assigned_to,
         priority: body.priority,
         due_date: body.due_date,
@@ -97,7 +99,7 @@ export async function PUT(
     if (error) throw error
 
     // Update phase progress based on task completion
-    await updatePhaseProgress(supabase, timelineId)
+    await updatePhaseProgressWeighted(supabase, timelineId)
 
     return NextResponse.json({ task })
   } catch (error) {
@@ -132,7 +134,7 @@ export async function DELETE(
     if (error) throw error
 
     // Update phase progress after deletion
-    await updatePhaseProgress(supabase, timelineId)
+    await updatePhaseProgressWeighted(supabase, timelineId)
 
     return NextResponse.json({ success: true })
   } catch (error) {
@@ -159,6 +161,25 @@ async function updatePhaseProgress(supabase: any, timelineId: string) {
     await supabase
       .from("project_timelines")
       .update({ progress_percentage: avgProgress })
+      .eq("id", timelineId)
+  }
+}
+
+async function updatePhaseProgressWeighted(supabase: any, timelineId: string) {
+  const { data: tasks } = await supabase
+    .from("project_tasks")
+    .select("completion_percentage, contribution_percentage")
+    .eq("timeline_id", timelineId)
+
+  if (tasks && tasks.length > 0) {
+    // Calculate weighted progress: sum of (contribution% × completion%) for each task
+    const weightedProgress = tasks.reduce((sum: number, task: any) => {
+      return sum + (task.contribution_percentage / 100) * task.completion_percentage
+    }, 0)
+
+    await supabase
+      .from("project_timelines")
+      .update({ progress_percentage: Math.round(weightedProgress) })
       .eq("id", timelineId)
   }
 }

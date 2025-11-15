@@ -1,9 +1,91 @@
 "use client"
 
-import { Calendar, CheckSquare, Users, BarChart3, Bell } from 'lucide-react'
+import { useState, useEffect } from "react"
+import { Calendar, CheckSquare, Users, BarChart3, Bell, Plus, X, Loader2 } from 'lucide-react'
 import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
-export default function ProjectPlannerClient({ timelines, ideas }) {
+interface Timeline {
+  id: string
+  phase_name: string
+  status: string
+  progress_percentage: number
+  idea_id: string
+  start_date: string
+  end_date: string
+  total_tasks?: number
+}
+
+interface Idea {
+  id: string
+  title: string
+}
+
+interface Task {
+  id: string
+  title: string
+  description: string | null
+  completion_percentage: number
+  contribution_percentage: number
+  status: string
+  priority: string
+  due_date: string | null
+}
+
+export default function ProjectPlannerClient({ 
+  timelines: initialTimelines, 
+  ideas 
+}: { 
+  timelines: Timeline[]
+  ideas: Idea[] 
+}) {
+  const [timelines, setTimelines] = useState<Timeline[]>(initialTimelines)
+  const [addPhaseOpen, setAddPhaseOpen] = useState(false)
+  const [addTaskOpen, setAddTaskOpen] = useState(false)
+  const [selectedTimeline, setSelectedTimeline] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState(false)
+  const [tasks, setTasks] = useState<Record<string, Task[]>>({})
+
+  const [newPhase, setNewPhase] = useState({
+    phase_name: "",
+    idea_id: "",
+    start_date: "",
+    end_date: "",
+    total_tasks: 0,
+    objectives: "",
+    deliverables: "",
+    resources_needed: "",
+  })
+
+  const [newTask, setNewTask] = useState({
+    title: "",
+    description: "",
+    completion_percentage: 0,
+    contribution_percentage: 0,
+    status: "pending",
+    priority: "medium",
+    due_date: "",
+  })
+
   const totalTasks = timelines?.length || 0
   const completedTasks = timelines?.filter((t) => t.status === "completed").length || 0
   const overallProgress =
@@ -20,6 +102,126 @@ export default function ProjectPlannerClient({ timelines, ideas }) {
     { name: "Notifications", icon: Bell, href: "/dashboard/tools/notifications" },
   ]
 
+  const loadTasks = async (timelineId: string) => {
+    try {
+      const ideaId = timelines.find(t => t.id === timelineId)?.idea_id
+      if (!ideaId) return
+
+      const res = await fetch(`/api/business-plan/${ideaId}/timeline/${timelineId}/tasks`)
+      const data = await res.json()
+      
+      if (res.ok) {
+        setTasks(prev => ({ ...prev, [timelineId]: data.tasks || [] }))
+      }
+    } catch (err) {
+      console.error("[v0] Load tasks error:", err)
+    }
+  }
+
+  const handleAddPhase = async () => {
+    if (!newPhase.phase_name || !newPhase.idea_id || !newPhase.start_date || !newPhase.end_date) {
+      setError("Please fill in all required fields")
+      return
+    }
+
+    setSaving(true)
+    setError("")
+
+    try {
+      const res = await fetch(`/api/business-plan/${newPhase.idea_id}/timeline`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...newPhase,
+          phase_number: timelines.length + 1,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error || "Failed to add phase")
+        return
+      }
+
+      setTimelines([...timelines, data.phase])
+      setNewPhase({
+        phase_name: "",
+        idea_id: "",
+        start_date: "",
+        end_date: "",
+        total_tasks: 0,
+        objectives: "",
+        deliverables: "",
+        resources_needed: "",
+      })
+      setAddPhaseOpen(false)
+      setSuccess(true)
+      setTimeout(() => setSuccess(false), 3000)
+    } catch (err) {
+      console.error("[v0] Add phase error:", err)
+      setError("Failed to add phase")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleAddTask = async () => {
+    if (!selectedTimeline || !newTask.title) {
+      setError("Please fill in the task title")
+      return
+    }
+
+    setSaving(true)
+    setError("")
+
+    try {
+      const ideaId = timelines.find(t => t.id === selectedTimeline)?.idea_id
+      if (!ideaId) {
+        setError("Timeline not found")
+        return
+      }
+
+      const res = await fetch(
+        `/api/business-plan/${ideaId}/timeline/${selectedTimeline}/tasks`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newTask),
+        }
+      )
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error || "Failed to add task")
+        return
+      }
+
+      await loadTasks(selectedTimeline)
+      setNewTask({
+        title: "",
+        description: "",
+        completion_percentage: 0,
+        contribution_percentage: 0,
+        status: "pending",
+        priority: "medium",
+        due_date: "",
+      })
+      setSuccess(true)
+      setTimeout(() => setSuccess(false), 3000)
+    } catch (err) {
+      console.error("[v0] Add task error:", err)
+      setError("Failed to add task")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  useEffect(() => {
+    timelines.forEach(timeline => loadTasks(timeline.id))
+  }, [timelines.length])
+
   return (
     <div className="flex min-h-screen bg-background">
       {/* Left Sidebar - Project Tools */}
@@ -29,7 +231,6 @@ export default function ProjectPlannerClient({ timelines, ideas }) {
           <button
             className="text-muted-foreground hover:text-foreground transition-colors p-1 hover:bg-muted rounded"
             onClick={() => {
-              // Collapse functionality can be added here if needed
               console.log("[v0] Collapse button clicked - functionality can be added")
             }}
           >
@@ -72,6 +273,18 @@ export default function ProjectPlannerClient({ timelines, ideas }) {
             </div>
           </div>
 
+          {error && (
+            <div className="mb-6 p-4 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+              {error}
+            </div>
+          )}
+
+          {success && (
+            <div className="mb-6 p-4 rounded-lg bg-green-500/10 border border-green-500/20 text-green-600 text-sm">
+              Changes saved successfully!
+            </div>
+          )}
+
           <div className="grid grid-cols-3 gap-6 mb-8">
             <div className="bg-card rounded-lg border border-border p-6">
               <div className="flex items-center justify-between mb-4">
@@ -110,7 +323,6 @@ export default function ProjectPlannerClient({ timelines, ideas }) {
             </div>
           </div>
 
-          {/* Project Timeline */}
           <div className="bg-card rounded-lg border border-border p-6">
             <div className="flex items-center justify-between mb-6">
               <div>
@@ -120,13 +332,13 @@ export default function ProjectPlannerClient({ timelines, ideas }) {
               <div className="flex gap-2">
                 <button
                   className="px-4 py-2 rounded-lg border border-border bg-background hover:bg-muted transition-colors"
-                  onClick={() => alert("Calendar view coming soon!")}
+                  onClick={() => window.location.href = "/dashboard/tools/timeline"}
                 >
                   View Calendar
                 </button>
                 <button
                   className="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-                  onClick={() => alert("Add phase form coming soon!")}
+                  onClick={() => setAddPhaseOpen(true)}
                 >
                   + Add Phase
                 </button>
@@ -137,6 +349,7 @@ export default function ProjectPlannerClient({ timelines, ideas }) {
               <div className="space-y-4">
                 {timelines.map((timeline) => {
                   const ideaTitle = ideas?.find((i) => i.id === timeline.idea_id)?.title || "Unknown Project"
+                  const phaseTasks = tasks[timeline.id] || []
                   return (
                     <div key={timeline.id} className="border-l-4 border-primary pl-6 py-4 relative">
                       <div className="absolute left-[-8px] top-6 w-4 h-4 rounded-full bg-primary border-4 border-background" />
@@ -148,6 +361,11 @@ export default function ProjectPlannerClient({ timelines, ideas }) {
                             <p className="text-xs text-muted-foreground mt-1">
                               {new Date(timeline.start_date).toLocaleDateString()} -{" "}
                               {new Date(timeline.end_date).toLocaleDateString()}
+                            </p>
+                          )}
+                          {timeline.total_tasks && timeline.total_tasks > 0 && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Total tasks planned: {timeline.total_tasks} | Completed: {phaseTasks.filter(t => t.status === 'completed').length}
                             </p>
                           )}
                         </div>
@@ -170,11 +388,38 @@ export default function ProjectPlannerClient({ timelines, ideas }) {
                         </div>
                         <button
                           className="px-6 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-                          onClick={() => alert("Add task form coming soon!")}
+                          onClick={() => {
+                            setSelectedTimeline(timeline.id)
+                            setAddTaskOpen(true)
+                          }}
                         >
                           + Add Task
                         </button>
                       </div>
+
+                      {phaseTasks.length > 0 && (
+                        <div className="mt-4 space-y-2">
+                          <h4 className="text-sm font-medium text-foreground">Tasks:</h4>
+                          {phaseTasks.map(task => (
+                            <div key={task.id} className="flex items-center justify-between p-3 bg-background rounded-lg border border-border">
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-foreground">{task.title}</p>
+                                {task.description && (
+                                  <p className="text-xs text-muted-foreground mt-1">{task.description}</p>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-4 text-xs">
+                                <span className="text-muted-foreground">
+                                  Contributes: {task.contribution_percentage}%
+                                </span>
+                                <span className="text-muted-foreground">
+                                  Done: {task.completion_percentage}%
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )
                 })}
@@ -194,6 +439,187 @@ export default function ProjectPlannerClient({ timelines, ideas }) {
           </div>
         </div>
       </div>
+
+      <Dialog open={addPhaseOpen} onOpenChange={setAddPhaseOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Add New Phase</DialogTitle>
+            <DialogDescription>
+              Create a new phase for your project timeline
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Select Business Idea</label>
+              <Select
+                value={newPhase.idea_id}
+                onValueChange={(value) => setNewPhase({ ...newPhase, idea_id: value })}
+              >
+                <SelectTrigger className="mt-2">
+                  <SelectValue placeholder="Choose an idea" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ideas.map((idea) => (
+                    <SelectItem key={idea.id} value={idea.id}>
+                      {idea.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Phase Name</label>
+                <Input
+                  value={newPhase.phase_name}
+                  onChange={(e) => setNewPhase({ ...newPhase, phase_name: e.target.value })}
+                  placeholder="e.g., MVP Development"
+                  className="mt-2"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Total Tasks to Complete</label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={newPhase.total_tasks}
+                  onChange={(e) => setNewPhase({ ...newPhase, total_tasks: parseInt(e.target.value) || 0 })}
+                  placeholder="e.g., 10"
+                  className="mt-2"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Start Date</label>
+                <Input
+                  type="date"
+                  value={newPhase.start_date}
+                  onChange={(e) => setNewPhase({ ...newPhase, start_date: e.target.value })}
+                  className="mt-2"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">End Date</label>
+                <Input
+                  type="date"
+                  value={newPhase.end_date}
+                  onChange={(e) => setNewPhase({ ...newPhase, end_date: e.target.value })}
+                  className="mt-2"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Objectives</label>
+              <Textarea
+                value={newPhase.objectives}
+                onChange={(e) => setNewPhase({ ...newPhase, objectives: e.target.value })}
+                placeholder="What are the main objectives for this phase?"
+                rows={3}
+                className="mt-2"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddPhaseOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddPhase} disabled={saving}>
+              {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Adding...</> : "Add Phase"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={addTaskOpen} onOpenChange={setAddTaskOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Add New Task</DialogTitle>
+            <DialogDescription>
+              Create a task and specify its contribution to the phase
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Task Title</label>
+              <Input
+                value={newTask.title}
+                onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                placeholder="e.g., Design user interface"
+                className="mt-2"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Description</label>
+              <Textarea
+                value={newTask.description}
+                onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                placeholder="Describe the task..."
+                rows={2}
+                className="mt-2"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">
+                Contribution to Phase: {newTask.contribution_percentage}%
+              </label>
+              <p className="text-xs text-muted-foreground mb-2">
+                What percentage of the phase does this task represent?
+              </p>
+              <Input
+                type="range"
+                min="0"
+                max="100"
+                step="5"
+                value={newTask.contribution_percentage}
+                onChange={(e) =>
+                  setNewTask({
+                    ...newTask,
+                    contribution_percentage: parseInt(e.target.value),
+                  })
+                }
+                className="mt-2"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Priority</label>
+                <Select
+                  value={newTask.priority}
+                  onValueChange={(value) => setNewTask({ ...newTask, priority: value })}
+                >
+                  <SelectTrigger className="mt-2">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="urgent">Urgent</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Due Date</label>
+                <Input
+                  type="date"
+                  value={newTask.due_date}
+                  onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
+                  className="mt-2"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddTaskOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddTask} disabled={saving}>
+              {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Adding...</> : "Add Task"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
