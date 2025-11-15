@@ -5,6 +5,8 @@ import { getSupabaseClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import Link from "next/link"
+import { ArrowLeft } from 'lucide-react'
 
 export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
@@ -97,6 +99,11 @@ export default function ProfilePage() {
   return (
     <div className="flex-1 p-6 md:p-8">
       <div className="max-w-2xl">
+        <Link href="/dashboard" className="inline-flex items-center gap-2 text-primary mb-4 hover:underline">
+          <ArrowLeft className="w-4 h-4" />
+          Back to Dashboard
+        </Link>
+
         <h1 className="text-3xl font-bold text-foreground mb-2">Profile Settings</h1>
         <p className="text-muted-foreground mb-8">Manage your account information and profile details</p>
 

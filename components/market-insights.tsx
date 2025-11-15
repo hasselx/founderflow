@@ -43,12 +43,16 @@ export default function MarketInsights({ domains }: { domains?: string[] }) {
         if (uniqueDomains.length > 0 && !selectedDomain) {
           setSelectedDomain(uniqueDomains[0])
         }
+        console.log("[v0] Fetched domains from DB:", uniqueDomains)
       } catch (error) {
         console.error("[v0] Error fetching domains:", error)
       }
     }
 
     fetchDomains()
+    const interval = setInterval(fetchDomains, 3000)
+    
+    return () => clearInterval(interval)
   }, [])
 
   useEffect(() => {

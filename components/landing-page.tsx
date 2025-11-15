@@ -82,8 +82,9 @@ export default function LandingPage() {
         <div className="space-y-8 text-center">
           <div className="space-y-4">
             <h1 className="text-5xl font-bold tracking-tight text-foreground sm:text-6xl lg:text-7xl">
-              Turn Your Startup Idea Into{" "}
-              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Reality</span>
+              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                Turn Your Startup Idea Into Reality
+              </span>
             </h1>
             <p className="mx-auto max-w-2xl text-xl text-muted-foreground">
               AI-powered validation, market research, and planning tools for founders. Connect with co-founders,
@@ -260,16 +261,16 @@ export default function LandingPage() {
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold text-foreground mb-4">Legal</h4>
+              <h4 className="font-semibold text-foreground mb-4">Contact</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li>
-                  <a href="#" className="hover:text-primary">
-                    Privacy
+                  <a href="mailto:ihasselx@gmail.com" className="hover:text-primary">
+                    ihasselx@gmail.com
                   </a>
                 </li>
                 <li>
                   <a href="#" className="hover:text-primary">
-                    Terms
+                    Support
                   </a>
                 </li>
               </ul>

@@ -4,6 +4,8 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { getSupabaseClient } from "@/lib/supabase/client"
+import Link from "next/link"
+import { ArrowLeft } from 'lucide-react'
 
 const AVAILABLE_DOMAINS = [
   "Technology",
@@ -124,6 +126,11 @@ export default function PreferencesPage() {
   return (
     <div className="flex-1 p-6 md:p-8">
       <div className="max-w-2xl">
+        <Link href="/dashboard" className="inline-flex items-center gap-2 text-primary mb-4 hover:underline">
+          <ArrowLeft className="w-4 h-4" />
+          Back to Dashboard
+        </Link>
+        
         <h1 className="text-3xl font-bold text-foreground mb-2">Preferences</h1>
         <p className="text-muted-foreground mb-8">Select the industries and topics you're interested in</p>
 
