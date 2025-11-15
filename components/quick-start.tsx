@@ -1,8 +1,8 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Lightbulb, Search, Users, Zap, ArrowRight } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { Lightbulb, Search, Users, Zap, ArrowRight } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 export default function QuickStart() {
   const router = useRouter()
@@ -40,7 +40,7 @@ export default function QuickStart() {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {actions.map((action) => {
             const Icon = action.icon
             return (

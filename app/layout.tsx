@@ -14,6 +14,7 @@ export const metadata: Metadata = {
   generator: "v0.app",
   icons: {
     icon: "/favicon.jpg",
+    apple: "/apple-icon.png",
   },
 }
 
@@ -25,7 +26,8 @@ export default function RootLayout({
   return (
     <html lang="en" style={{ scrollBehavior: "smooth" }}>
       <head>
-        <link rel="icon" href="/favicon.jpg" type="image/png" />
+        <link rel="icon" href="/favicon.jpg" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/apple-icon.png" />
         <meta name="theme-color" content="#1e3a8a" />
         <script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js" />
       </head>

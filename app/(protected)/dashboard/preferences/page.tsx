@@ -39,6 +39,7 @@ export default function PreferencesPage() {
 
           if (data) {
             setSelectedDomains(data.map((d) => d.domain))
+            console.log("[v0] Loaded domains:", data.map((d) => d.domain))
           }
         }
       } catch (error) {
@@ -52,10 +53,12 @@ export default function PreferencesPage() {
   }, [])
 
   const handleDomainToggle = async (domain: string) => {
-    const updated = selectedDomains.includes(domain)
+    const isSelected = selectedDomains.includes(domain)
+    const updated = isSelected
       ? selectedDomains.filter((d) => d !== domain)
       : [...selectedDomains, domain]
     
+    console.log("[v0] Toggling domain:", domain, "selected:", isSelected, "new list:", updated)
     setSelectedDomains(updated)
     await handleSavePreferences(updated)
   }
@@ -75,7 +78,11 @@ export default function PreferencesPage() {
       console.log("[v0] Saving preferences for user:", user.id, "domains:", domains)
 
       // Delete existing domains
-      await supabase.from("user_domains").delete().eq("user_id", user.id)
+      const { error: deleteError } = await supabase.from("user_domains").delete().eq("user_id", user.id)
+      
+      if (deleteError) {
+        console.error("[v0] Error deleting old domains:", deleteError)
+      }
 
       // Insert new domains
       if (domains.length > 0) {
@@ -92,7 +99,7 @@ export default function PreferencesPage() {
         }
       }
 
-      console.log("[v0] Preferences saved successfully")
+      console.log("[v0] Preferences saved successfully:", domains)
       setMessage("Preferences updated!")
       setTimeout(() => setMessage(""), 2000)
     } catch (error) {
@@ -135,7 +142,7 @@ export default function PreferencesPage() {
                 >
                   <Checkbox
                     checked={selectedDomains.includes(domain)}
-                    onCheckedChange={() => handleDomainToggle(domain)}
+                    onCheckedChange={(checked) => handleDomainToggle(domain)}
                     disabled={saving}
                   />
                   <span className="text-foreground font-medium">{domain}</span>
