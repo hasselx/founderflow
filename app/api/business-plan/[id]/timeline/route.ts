@@ -63,7 +63,7 @@ export async function POST(
         objectives: body.objectives || "",
         deliverables: body.deliverables || "",
         resources_needed: body.resources_needed || "",
-        status: "pending",
+        status: "planned",
         progress_percentage: 0,
       })
       .select()
