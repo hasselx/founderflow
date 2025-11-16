@@ -43,12 +43,16 @@ export async function POST(
   { params }: { params: Promise<{ id: string; timelineId: string }> }
 ) {
   try {
-    const { timelineId } = await params
+    const { id: businessPlanId, timelineId } = await params
     const body = await request.json()
     const supabase = await getSupabaseServerClient()
 
-    const validStatuses = ["pending", "in_progress", "completed"]
-    const status = validStatuses.includes(body.status) ? body.status : "pending"
+    if (!body.title) {
+      return NextResponse.json({ error: "Task title is required" }, { status: 400 })
+    }
+
+    const contributionPercentage = Math.min(100, Math.max(0, body.contribution_percentage || 0))
+    const completionPercentage = Math.min(100, Math.max(0, body.completion_percentage || 0))
 
     const { data: task, error } = await supabase
       .from("project_tasks")
@@ -56,10 +60,9 @@ export async function POST(
         timeline_id: timelineId,
         title: body.title,
         description: body.description || null,
-        status: status,
-        completion_percentage: body.completion_percentage || 0,
-        contribution_percentage: body.contribution_percentage || 0,
-        assigned_to: body.assigned_to || null,
+        status: "pending",
+        completion_percentage: completionPercentage,
+        contribution_percentage: contributionPercentage,
         priority: body.priority || "medium",
         due_date: body.due_date || null,
       })

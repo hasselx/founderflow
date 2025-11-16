@@ -39,6 +39,41 @@ export default function ResourcesPage() {
     channelId: ""
   })
 
+  const handleSaveSlackConfig = async () => {
+    if (!slackConfig.botToken) {
+      alert("Please enter at least the Bot User OAuth Token")
+      return
+    }
+
+    setLoading(true)
+    try {
+      const res = await fetch("/api/integrations/slack", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(slackConfig),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        alert(data.error || "Failed to save Slack configuration")
+        return
+      }
+
+      setIntegrations(
+        integrations.map((i) =>
+          i.key === "slack" ? { ...i, configured: true } : i
+        )
+      )
+      alert("Slack configuration saved successfully!")
+    } catch (error) {
+      console.error("[v0] Slack save error:", error)
+      alert("Failed to save Slack configuration")
+    } finally {
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
     const fetchResources = async () => {
       try {
@@ -174,7 +209,9 @@ export default function ResourcesPage() {
                       <Input placeholder="Bot User OAuth Token" type="password" value={slackConfig.botToken} onChange={(e) => setSlackConfig({...slackConfig, botToken: e.target.value})} />
                       <Input placeholder="Channel ID" value={slackConfig.channelId} onChange={(e) => setSlackConfig({...slackConfig, channelId: e.target.value})} />
                       <div className="text-sm text-muted-foreground">Scopes: channels:history, channels:read, chat:write, im:history, im:read, users:read, users:read.email, channels:write.invites, chat:write</div>
-                      <Button className="w-full">Save Slack Configuration</Button>
+                      <Button className="w-full" onClick={handleSaveSlackConfig} disabled={loading}>
+                        {loading ? "Saving..." : "Save Slack Configuration"}
+                      </Button>
                     </div>
                   )}
                 </div>
