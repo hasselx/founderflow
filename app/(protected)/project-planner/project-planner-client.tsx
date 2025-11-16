@@ -415,6 +415,40 @@ export default function ProjectPlannerClient({
                                 <span className="text-muted-foreground">
                                   Done: {task.completion_percentage}%
                                 </span>
+                                <button
+                                  className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                                    task.status === 'completed'
+                                      ? 'bg-green-500/10 text-green-600 border border-green-500/20'
+                                      : 'bg-muted text-muted-foreground border border-border hover:bg-muted/80'
+                                  }`}
+                                  onClick={async () => {
+                                    try {
+                                      const ideaId = timelines.find(t => t.id === timeline.id)?.idea_id
+                                      const newStatus = task.status === 'completed' ? 'pending' : 'completed'
+                                      const newCompletion = task.status === 'completed' ? 0 : 100
+
+                                      const res = await fetch(
+                                        `/api/business-plan/${ideaId}/timeline/${timeline.id}/tasks/${task.id}`,
+                                        {
+                                          method: 'PUT',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({
+                                            status: newStatus,
+                                            completion_percentage: newCompletion,
+                                          }),
+                                        }
+                                      )
+
+                                      if (res.ok) {
+                                        await loadTasks(timeline.id)
+                                      }
+                                    } catch (err) {
+                                      console.error("[v0] Mark done error:", err)
+                                    }
+                                  }}
+                                >
+                                  {task.status === 'completed' ? 'Undo' : 'Mark Done'}
+                                </button>
                               </div>
                             </div>
                           ))}

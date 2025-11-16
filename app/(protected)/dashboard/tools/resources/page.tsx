@@ -84,6 +84,24 @@ export default function ResourcesPage() {
 
         if (!user) return
 
+        try {
+          const slackRes = await fetch("/api/integrations/slack")
+          const slackData = await slackRes.json()
+          if (slackData.integration && slackData.integration.config) {
+            setSlackConfig({
+              appId: slackData.integration.config.app_id || "",
+              clientId: slackData.integration.config.client_id || "",
+              clientSecret: slackData.integration.config.client_secret || "",
+              signingSecret: slackData.integration.config.signing_secret || "",
+              verificationToken: slackData.integration.config.verification_token || "",
+              botToken: slackData.integration.config.bot_token || "",
+              channelId: slackData.integration.config.channel_id || ""
+            })
+          }
+        } catch (err) {
+          console.error("[v0] Error loading Slack config:", err)
+        }
+
         const { data: cofounders } = await supabase
           .from("cofounder_profiles")
           .select("id, bio")
