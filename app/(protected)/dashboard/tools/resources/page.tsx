@@ -38,6 +38,8 @@ export default function ResourcesPage() {
     botToken: "",
     channelId: ""
   })
+  const [slackMembers, setSlackMembers] = useState<string[]>([])
+  const [newMemberEmail, setNewMemberEmail] = useState("")
 
   const handleSaveSlackConfig = async () => {
     if (!slackConfig.botToken) {
@@ -60,8 +62,8 @@ export default function ResourcesPage() {
         return
       }
 
-      setIntegrations(
-        integrations.map((i) =>
+      setIntegrations(prev =>
+        prev.map((i) =>
           i.key === "slack" ? { ...i, configured: true } : i
         )
       )
@@ -71,6 +73,37 @@ export default function ResourcesPage() {
       alert("Failed to save Slack configuration")
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleAddSlackMember = async () => {
+    if (!newMemberEmail || !slackConfig.botToken) {
+      alert("Please configure Slack first and enter a valid email")
+      return
+    }
+
+    try {
+      const res = await fetch("/api/integrations/slack/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          email: newMemberEmail,
+          channelId: slackConfig.channelId 
+        }),
+      })
+
+      const data = await res.json()
+
+      if (res.ok) {
+        setSlackMembers([...slackMembers, newMemberEmail])
+        setNewMemberEmail("")
+        alert("Invitation sent successfully!")
+      } else {
+        alert(data.error || "Failed to invite member")
+      }
+    } catch (error) {
+      console.error("[v0] Slack invite error:", error)
+      alert("Failed to invite member")
     }
   }
 
@@ -87,19 +120,34 @@ export default function ResourcesPage() {
         try {
           const slackRes = await fetch("/api/integrations/slack")
           const slackData = await slackRes.json()
+          
+          let isConfigured = false
           if (slackData.integration && slackData.integration.config) {
+            const config = slackData.integration.config
             setSlackConfig({
-              appId: slackData.integration.config.app_id || "",
-              clientId: slackData.integration.config.client_id || "",
-              clientSecret: slackData.integration.config.client_secret || "",
-              signingSecret: slackData.integration.config.signing_secret || "",
-              verificationToken: slackData.integration.config.verification_token || "",
-              botToken: slackData.integration.config.bot_token || "",
-              channelId: slackData.integration.config.channel_id || ""
+              appId: config.app_id || "",
+              clientId: config.client_id || "",
+              clientSecret: config.client_secret || "",
+              signingSecret: config.signing_secret || "",
+              verificationToken: config.verification_token || "",
+              botToken: config.bot_token || "",
+              channelId: config.channel_id || ""
             })
+            isConfigured = !!config.bot_token
           }
+          
+          setIntegrations([
+            { name: "Slack", key: "slack", configured: isConfigured },
+            { name: "GitHub", key: "github", configured: false },
+            { name: "Jira", key: "jira", configured: false },
+          ])
         } catch (err) {
           console.error("[v0] Error loading Slack config:", err)
+          setIntegrations([
+            { name: "Slack", key: "slack", configured: false },
+            { name: "GitHub", key: "github", configured: false },
+            { name: "Jira", key: "jira", configured: false },
+          ])
         }
 
         const { data: cofounders } = await supabase
@@ -141,12 +189,6 @@ export default function ResourcesPage() {
             category: "Funding & Financial",
             items: [{ name: "Track your funding", role: "Financial management" }],
           },
-        ])
-
-        setIntegrations([
-          { name: "Slack", key: "slack", configured: !!slackConfig.botToken },
-          { name: "GitHub", key: "github", configured: false },
-          { name: "Jira", key: "jira", configured: false },
         ])
       } catch (error) {
         console.error("[v0] Error fetching resources:", error)
@@ -230,6 +272,41 @@ export default function ResourcesPage() {
                       <Button className="w-full" onClick={handleSaveSlackConfig} disabled={loading}>
                         {loading ? "Saving..." : "Save Slack Configuration"}
                       </Button>
+
+                      {integration.configured && (
+                        <div className="mt-6 pt-6 border-t">
+                          <h4 className="font-medium text-foreground mb-3">Add Team Members to Slack</h4>
+                          <div className="flex gap-2 mb-3">
+                            <Input 
+                              placeholder="Email address" 
+                              value={newMemberEmail}
+                              onChange={(e) => setNewMemberEmail(e.target.value)}
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter') handleAddSlackMember()
+                              }}
+                            />
+                            <Button onClick={handleAddSlackMember}>
+                              <Plus className="w-4 h-4 mr-2" />
+                              Invite
+                            </Button>
+                          </div>
+                          {slackMembers.length > 0 && (
+                            <div className="space-y-2">
+                              {slackMembers.map((email, idx) => (
+                                <div key={idx} className="flex items-center justify-between p-2 bg-muted rounded">
+                                  <span className="text-sm">{email}</span>
+                                  <button 
+                                    onClick={() => setSlackMembers(slackMembers.filter((_, i) => i !== idx))}
+                                    className="text-destructive hover:text-destructive/80"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

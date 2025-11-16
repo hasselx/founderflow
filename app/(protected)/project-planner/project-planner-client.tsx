@@ -218,13 +218,75 @@ export default function ProjectPlannerClient({
     }
   }
 
+  const handleUpdateTaskStatus = async (
+    timelineId: string,
+    taskId: string,
+    newStatus: string
+  ) => {
+    try {
+      const ideaId = timelines.find(t => t.id === timelineId)?.idea_id
+      if (!ideaId) return
+
+      const completionMap: Record<string, number> = {
+        'planned': 0,
+        'upcoming': 0,
+        'in_progress': 50,
+        'completed': 100
+      }
+
+      const res = await fetch(
+        `/api/business-plan/${ideaId}/timeline/${timelineId}/tasks`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: taskId,
+            status: newStatus,
+            completion_percentage: completionMap[newStatus] || 0,
+          }),
+        }
+      )
+
+      if (res.ok) {
+        await loadTasks(timelineId)
+        const timelineRes = await fetch(`/api/business-plan/${ideaId}/timeline`)
+        const timelineData = await timelineRes.json()
+        if (timelineData.timelines) {
+          setTimelines(timelineData.timelines)
+        }
+      }
+    } catch (err) {
+      console.error("[v0] Update task status error:", err)
+    }
+  }
+
+  const [phaseFilter, setPhaseFilter] = useState<"all" | "relevant" | "date-added">("all")
+
+  const getFilteredTimelines = () => {
+    let filtered = [...timelines]
+    
+    if (phaseFilter === "relevant") {
+      const now = new Date()
+      filtered.sort((a, b) => {
+        const aDate = new Date(a.end_date)
+        const bDate = new Date(b.end_date)
+        const aDiff = Math.abs(aDate.getTime() - now.getTime())
+        const bDiff = Math.abs(bDate.getTime() - now.getTime())
+        return aDiff - bDiff
+      })
+    } else if (phaseFilter === "date-added") {
+      filtered.sort((a, b) => b.id.localeCompare(a.id))
+    }
+    
+    return filtered
+  }
+
   useEffect(() => {
     timelines.forEach(timeline => loadTasks(timeline.id))
   }, [timelines.length])
 
   return (
     <div className="flex min-h-screen bg-background">
-      {/* Left Sidebar - Project Tools */}
       <aside className="w-64 border-r border-border bg-card p-6 flex-shrink-0 flex flex-col">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-bold text-foreground">Project Tools</h2>
@@ -253,7 +315,6 @@ export default function ProjectPlannerClient({
         </nav>
       </aside>
 
-      {/* Main Content - Full width without right sidebar */}
       <div className="flex-1 p-8 overflow-auto">
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center justify-between mb-6">
@@ -330,6 +391,16 @@ export default function ProjectPlannerClient({
                 <p className="text-sm text-muted-foreground">Track progress across all project phases</p>
               </div>
               <div className="flex gap-2">
+                <Select value={phaseFilter} onValueChange={(value: any) => setPhaseFilter(value)}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="Filter" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Phases</SelectItem>
+                    <SelectItem value="relevant">Most Relevant</SelectItem>
+                    <SelectItem value="date-added">Recently Added</SelectItem>
+                  </SelectContent>
+                </Select>
                 <button
                   className="px-4 py-2 rounded-lg border border-border bg-background hover:bg-muted transition-colors"
                   onClick={() => window.location.href = "/dashboard/tools/timeline"}
@@ -345,9 +416,28 @@ export default function ProjectPlannerClient({
               </div>
             </div>
 
+            <div className="flex items-center gap-6 mb-6 p-3 bg-muted/50 rounded-lg">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-green-500" />
+                <span className="text-sm text-muted-foreground">Completed</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-blue-500" />
+                <span className="text-sm text-muted-foreground">In Progress</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-orange-500" />
+                <span className="text-sm text-muted-foreground">Upcoming</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-gray-400" />
+                <span className="text-sm text-muted-foreground">Planned</span>
+              </div>
+            </div>
+
             {timelines && timelines.length > 0 ? (
               <div className="space-y-4">
-                {timelines.map((timeline) => {
+                {getFilteredTimelines().map((timeline) => {
                   const ideaTitle = ideas?.find((i) => i.id === timeline.idea_id)?.title || "Unknown Project"
                   const phaseTasks = tasks[timeline.id] || []
                   return (
@@ -400,58 +490,52 @@ export default function ProjectPlannerClient({
                       {phaseTasks.length > 0 && (
                         <div className="mt-4 space-y-2">
                           <h4 className="text-sm font-medium text-foreground">Tasks:</h4>
-                          {phaseTasks.map(task => (
-                            <div key={task.id} className="flex items-center justify-between p-3 bg-background rounded-lg border border-border">
-                              <div className="flex-1">
-                                <p className="text-sm font-medium text-foreground">{task.title}</p>
-                                {task.description && (
-                                  <p className="text-xs text-muted-foreground mt-1">{task.description}</p>
-                                )}
+                          {phaseTasks.map(task => {
+                            const statusColors: Record<string, string> = {
+                              'completed': 'bg-green-500',
+                              'in_progress': 'bg-blue-500',
+                              'upcoming': 'bg-orange-500',
+                              'planned': 'bg-gray-400',
+                              'pending': 'bg-gray-400'
+                            }
+                            const statusColor = statusColors[task.status] || 'bg-gray-400'
+                            
+                            return (
+                              <div key={task.id} className="flex items-center justify-between p-3 bg-background rounded-lg border border-border">
+                                <div className="flex items-center gap-3 flex-1">
+                                  <div className={`w-2 h-2 rounded-full ${statusColor}`} />
+                                  <div className="flex-1">
+                                    <p className="text-sm font-medium text-foreground">{task.title}</p>
+                                    {task.description && (
+                                      <p className="text-xs text-muted-foreground mt-1">{task.description}</p>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-4 text-xs">
+                                  <span className="text-muted-foreground">
+                                    Contributes: {task.contribution_percentage}%
+                                  </span>
+                                  <span className="text-muted-foreground">
+                                    Done: {task.completion_percentage}%
+                                  </span>
+                                  <Select
+                                    value={task.status}
+                                    onValueChange={(value) => handleUpdateTaskStatus(timeline.id, task.id, value)}
+                                  >
+                                    <SelectTrigger className="w-32 h-8">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="planned">Planned</SelectItem>
+                                      <SelectItem value="upcoming">Upcoming</SelectItem>
+                                      <SelectItem value="in_progress">In Progress</SelectItem>
+                                      <SelectItem value="completed">Completed</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
                               </div>
-                              <div className="flex items-center gap-4 text-xs">
-                                <span className="text-muted-foreground">
-                                  Contributes: {task.contribution_percentage}%
-                                </span>
-                                <span className="text-muted-foreground">
-                                  Done: {task.completion_percentage}%
-                                </span>
-                                <button
-                                  className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                                    task.status === 'completed'
-                                      ? 'bg-green-500/10 text-green-600 border border-green-500/20'
-                                      : 'bg-muted text-muted-foreground border border-border hover:bg-muted/80'
-                                  }`}
-                                  onClick={async () => {
-                                    try {
-                                      const ideaId = timelines.find(t => t.id === timeline.id)?.idea_id
-                                      const newStatus = task.status === 'completed' ? 'pending' : 'completed'
-                                      const newCompletion = task.status === 'completed' ? 0 : 100
-
-                                      const res = await fetch(
-                                        `/api/business-plan/${ideaId}/timeline/${timeline.id}/tasks/${task.id}`,
-                                        {
-                                          method: 'PUT',
-                                          headers: { 'Content-Type': 'application/json' },
-                                          body: JSON.stringify({
-                                            status: newStatus,
-                                            completion_percentage: newCompletion,
-                                          }),
-                                        }
-                                      )
-
-                                      if (res.ok) {
-                                        await loadTasks(timeline.id)
-                                      }
-                                    } catch (err) {
-                                      console.error("[v0] Mark done error:", err)
-                                    }
-                                  }}
-                                >
-                                  {task.status === 'completed' ? 'Undo' : 'Mark Done'}
-                                </button>
-                              </div>
-                            </div>
-                          ))}
+                            )
+                          })}
                         </div>
                       )}
                     </div>

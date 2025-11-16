@@ -96,19 +96,30 @@ export async function PUT(
     const body = await request.json()
     const supabase = await getSupabaseServerClient()
 
+    if (!body.id) {
+      return NextResponse.json({ error: "Task ID is required" }, { status: 400 })
+    }
+
+    const updateData: any = {
+      updated_at: new Date().toISOString(),
+    }
+
+    if (body.title !== undefined) updateData.title = body.title
+    if (body.description !== undefined) updateData.description = body.description
+    if (body.status !== undefined) updateData.status = body.status
+    if (body.completion_percentage !== undefined) {
+      updateData.completion_percentage = Math.min(100, Math.max(0, body.completion_percentage))
+    }
+    if (body.contribution_percentage !== undefined) {
+      updateData.contribution_percentage = Math.min(100, Math.max(0, body.contribution_percentage))
+    }
+    if (body.assigned_to !== undefined) updateData.assigned_to = body.assigned_to
+    if (body.priority !== undefined) updateData.priority = body.priority
+    if (body.due_date !== undefined) updateData.due_date = body.due_date
+
     const { data: task, error } = await supabase
       .from("project_tasks")
-      .update({
-        title: body.title,
-        description: body.description,
-        status: body.status,
-        completion_percentage: body.completion_percentage,
-        contribution_percentage: body.contribution_percentage,
-        assigned_to: body.assigned_to,
-        priority: body.priority,
-        due_date: body.due_date,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq("id", body.id)
       .select()
       .single()
