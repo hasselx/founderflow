@@ -7,6 +7,11 @@ export async function GET(
 ) {
   try {
     const { timelineId } = await params
+    
+    if (!timelineId) {
+      return NextResponse.json({ error: "Timeline ID required" }, { status: 400 })
+    }
+
     const supabase = await getSupabaseServerClient()
 
     const { data: tasks, error } = await supabase
@@ -15,13 +20,19 @@ export async function GET(
       .eq("timeline_id", timelineId)
       .order("created_at", { ascending: true })
 
-    if (error) throw error
+    if (error) {
+      console.error("[v0] Supabase error fetching tasks:", error)
+      throw new Error(`Failed to fetch tasks: ${error.message}`)
+    }
 
     return NextResponse.json({ tasks: tasks || [] })
   } catch (error) {
     console.error("[v0] Get tasks error:", error)
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to fetch tasks" },
+      { 
+        error: error instanceof Error ? error.message : "Failed to fetch tasks",
+        details: process.env.NODE_ENV === "development" ? String(error) : undefined
+      },
       { status: 500 }
     )
   }
@@ -36,13 +47,16 @@ export async function POST(
     const body = await request.json()
     const supabase = await getSupabaseServerClient()
 
+    const validStatuses = ["pending", "in_progress", "completed"]
+    const status = validStatuses.includes(body.status) ? body.status : "pending"
+
     const { data: task, error } = await supabase
       .from("project_tasks")
       .insert({
         timeline_id: timelineId,
         title: body.title,
         description: body.description || null,
-        status: body.status || "pending",
+        status: status,
         completion_percentage: body.completion_percentage || 0,
         contribution_percentage: body.contribution_percentage || 0,
         assigned_to: body.assigned_to || null,
