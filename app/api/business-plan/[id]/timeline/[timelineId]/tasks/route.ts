@@ -100,16 +100,18 @@ export async function PUT(
       return NextResponse.json({ error: "Task ID is required" }, { status: 400 })
     }
 
-    const statusMap: { [key: string]: string } = {
-      "planned": "planned",
-      "upcoming": "upcoming",
-      "in-progress": "in_progress",
-      "in_progress": "in_progress",
-      "completed": "completed"
+    const validStatuses = ["planned", "upcoming", "in_progress", "completed"]
+    let normalizedStatus = body.status?.toLowerCase() || "planned"
+    
+    if (normalizedStatus === "in-progress") {
+      normalizedStatus = "in_progress"
     }
     
-    const normalizedStatus = statusMap[body.status?.toLowerCase()] || "planned"
-    console.log("[v0] Status normalization:", { input: body.status, output: normalizedStatus })
+    if (!validStatuses.includes(normalizedStatus)) {
+      normalizedStatus = "planned"
+    }
+
+    console.log("[v0] Normalized status:", normalizedStatus)
 
     const updateData: any = {
       updated_at: new Date().toISOString(),
@@ -128,8 +130,6 @@ export async function PUT(
     if (body.priority !== undefined) updateData.priority = body.priority
     if (body.due_date !== undefined) updateData.due_date = body.due_date
 
-    console.log("[v0] Updating task with:", { id: body.id, updateData })
-
     const { data: task, error } = await supabase
       .from("project_tasks")
       .update(updateData)
@@ -138,11 +138,10 @@ export async function PUT(
       .single()
 
     if (error) {
-      console.error("[v0] Database error updating task:", error)
-      throw error
+      console.error("[v0] Database error:", error)
+      throw new Error(`Database error: ${error.message}`)
     }
 
-    // Update phase progress based on task completion
     await updatePhaseProgressWeighted(supabase, timelineId)
 
     return NextResponse.json({ task })

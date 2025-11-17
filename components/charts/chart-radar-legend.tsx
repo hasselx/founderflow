@@ -1,16 +1,6 @@
 "use client"
 
-import { TrendingUp } from 'lucide-react'
-import { PolarAngleAxis, PolarGrid, Radar, RadarChart } from "recharts"
-
-import {
-  ChartConfig,
-  ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart"
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Legend, Tooltip, ResponsiveContainer } from "recharts"
 
 const chartConfig = {
   desktop: {
@@ -24,32 +14,27 @@ const chartConfig = {
 } satisfies ChartConfig
 
 export function ChartRadarLegend({ data }: { data: any[] }) {
+  if (!data || data.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-80 bg-muted/50 rounded-lg">
+        <p className="text-muted-foreground">No data available</p>
+      </div>
+    )
+  }
+
   return (
-    <ChartContainer
-      config={chartConfig}
-      className="mx-auto aspect-square max-h-[350px]"
-    >
-      <RadarChart
-        data={data}
-        margin={{
-          top: -40,
-          bottom: -10,
-        }}
-      >
-        <ChartTooltip
-          cursor={false}
-          content={<ChartTooltipContent indicator="line" />}
-        />
+    <ResponsiveContainer width="100%" height={350}>
+      <RadarChart data={data} margin={{ top: 20, right: 80, bottom: 20, left: 80 }}>
+        <PolarGrid stroke="#e5e7eb" />
         <PolarAngleAxis dataKey="month" />
-        <PolarGrid />
-        <Radar
-          dataKey="desktop"
-          fill="var(--color-desktop)"
-          fillOpacity={0.6}
-        />
-        <Radar dataKey="mobile" fill="var(--color-mobile)" />
-        <ChartLegend className="mt-8" content={<ChartLegendContent />} />
+        <PolarRadiusAxis angle={90} domain={[0, "auto"]} />
+        <Tooltip contentStyle={{ backgroundColor: "#fff", border: "1px solid #e5e7eb" }} />
+        <Legend />
+        <Radar name="Completed" dataKey="completed" stroke="#10b981" fill="#10b981" fillOpacity={0.25} />
+        <Radar name="In Progress" dataKey="in_progress" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.25} />
+        <Radar name="Upcoming" dataKey="upcoming" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.25} />
+        <Radar name="Planned" dataKey="planned" stroke="#94a3b8" fill="#94a3b8" fillOpacity={0.25} />
       </RadarChart>
-    </ChartContainer>
+    </ResponsiveContainer>
   )
 }

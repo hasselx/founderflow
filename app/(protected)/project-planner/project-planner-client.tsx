@@ -414,7 +414,20 @@ export default function ProjectPlannerClient({
                 </Select>
                 <button
                   className="px-4 py-2 rounded-lg border border-border bg-background hover:bg-muted transition-colors"
-                  onClick={() => window.location.href = "/dashboard/tools/timeline"}
+                  onClick={() => {
+                    const calendarDialog = document.createElement('div')
+                    calendarDialog.id = 'calendar-modal'
+                    calendarDialog.innerHTML = `
+                      <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                        <div class="bg-white rounded-lg shadow-lg p-6 max-w-md w-full mx-4">
+                          <h2 class="text-xl font-bold mb-4">Project Timeline Calendar</h2>
+                          <div id="calendar-container"></div>
+                          <button onclick="document.getElementById('calendar-modal').remove()" class="mt-4 w-full px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">Close</button>
+                        </div>
+                      </div>
+                    `
+                    document.body.appendChild(calendarDialog)
+                  }}
                 >
                   View Calendar
                 </button>
