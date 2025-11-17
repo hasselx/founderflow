@@ -93,7 +93,11 @@ export default function ProfilePage() {
 
       if (uploadError) {
         console.error("[v0] Upload error:", uploadError)
-        setMessage(`Upload error: ${uploadError.message}`)
+        if (uploadError.message.includes('not found')) {
+          setMessage("Avatar storage not configured. Please contact support.")
+        } else {
+          setMessage(`Upload error: ${uploadError.message}`)
+        }
         return
       }
 

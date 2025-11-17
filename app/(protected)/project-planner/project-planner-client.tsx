@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { CalendarWithEvents } from "@/components/calendar-with-events"
 
 interface Timeline {
   id: string
@@ -291,6 +292,24 @@ export default function ProjectPlannerClient({
     }
     
     return filtered
+  }
+
+  const getCalendarEvents = () => {
+    const events: any[] = []
+    timelines.forEach(timeline => {
+      const phaseTasks = tasks[timeline.id] || []
+      phaseTasks.forEach(task => {
+        if (task.due_date) {
+          events.push({
+            id: task.id,
+            title: task.title,
+            date: new Date(task.due_date),
+            status: task.status,
+          })
+        }
+      })
+    })
+    return events
   }
 
   useEffect(() => {
@@ -759,9 +778,7 @@ export default function ProjectPlannerClient({
               View tasks and deadlines
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            {/* Calendar will be added here */}
-          </div>
+          <CalendarWithEvents events={getCalendarEvents()} />
         </DialogContent>
       </Dialog>
     </div>
