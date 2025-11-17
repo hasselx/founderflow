@@ -298,14 +298,15 @@ export default function ProjectPlannerClient({
 
   return (
     <div className="flex min-h-screen bg-background">
-      <aside className={`${sidebarOpen ? 'w-64' : 'w-20'} border-r border-border bg-card p-6 flex-shrink-0 flex flex-col transition-all duration-300`}>
+      <aside className={`transition-all duration-300 border-r border-border bg-card p-4 flex-shrink-0 flex flex-col ${sidebarOpen ? 'w-64' : 'w-20'}`}>
         <div className="flex items-center justify-between mb-6">
           {sidebarOpen && <h2 className="text-lg font-bold text-foreground">Project Tools</h2>}
           <button
-            className="text-muted-foreground hover:text-foreground transition-colors p-1 hover:bg-muted rounded"
+            className="text-muted-foreground hover:text-foreground transition-colors p-2 hover:bg-muted rounded"
             onClick={() => setSidebarOpen(!sidebarOpen)}
+            aria-label="Toggle sidebar"
           >
-            <svg className={`w-5 h-5 transition-transform ${sidebarOpen ? 'rotate-0' : 'rotate-180'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className={`w-5 h-5 transition-transform duration-300 ${sidebarOpen ? 'rotate-0' : 'rotate-180'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
@@ -315,11 +316,11 @@ export default function ProjectPlannerClient({
             <Link
               key={tool.name}
               href={tool.href}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors ${!sidebarOpen && 'justify-center'}`}
               title={tool.name}
             >
               <tool.icon className="w-5 h-5 flex-shrink-0" />
-              {sidebarOpen && <span className="font-medium">{tool.name}</span>}
+              {sidebarOpen && <span className="font-medium whitespace-nowrap">{tool.name}</span>}
             </Link>
           ))}
         </nav>

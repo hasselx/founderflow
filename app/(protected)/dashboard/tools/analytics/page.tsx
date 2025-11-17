@@ -115,8 +115,8 @@ export default function AnalyticsPage() {
         setTaskDistribution([
           { name: "Completed", value: completedTasks.length, color: STATUS_COLORS.completed },
           { name: "In Progress", value: inProgressTasks.length, color: STATUS_COLORS["in-progress"] },
-          { name: "To Do", value: upcomingTasks.length, color: STATUS_COLORS.upcoming },
-          { name: "Blocked", value: plannedTasks.length, color: STATUS_COLORS.planned },
+          { name: "Upcoming", value: upcomingTasks.length, color: STATUS_COLORS.upcoming },
+          { name: "Planned", value: plannedTasks.length, color: STATUS_COLORS.planned },
         ])
 
         const months = ["Aug", "Sep", "Oct", "Nov"]
@@ -127,13 +127,16 @@ export default function AnalyticsPage() {
             return date.getMonth() === monthIndex - 1
           })
           const completedInMonth = monthTasks.filter(t => t.status === "completed").length
-          const desktopPercentage = monthTasks.length > 0 ? Math.round((completedInMonth / monthTasks.length) * 100) : 0
-          const mobilePercentage = Math.max(0, desktopPercentage - 5) // Slightly lower mobile data
+          const inProgressInMonth = monthTasks.filter(t => t.status === "in-progress").length
+          const upcomingInMonth = monthTasks.filter(t => t.status === "upcoming").length
+          const plannedInMonth = monthTasks.filter(t => t.status === "planned").length
           
           return {
             month,
-            desktop: Math.min(desktopPercentage, 100),
-            mobile: Math.min(mobilePercentage, 100),
+            completed: completedInMonth,
+            in_progress: inProgressInMonth,
+            upcoming: upcomingInMonth,
+            planned: plannedInMonth,
           }
         })
         setMonthlyTrends(monthlyData)

@@ -100,8 +100,8 @@ export async function PUT(
       return NextResponse.json({ error: "Task ID is required" }, { status: 400 })
     }
 
-    const validStatuses = ["planned", "upcoming", "in_progress", "completed", "pending"]
-    const status = validStatuses.includes(body.status) ? body.status : "pending"
+    const validStatuses = ["planned", "upcoming", "in_progress", "completed"]
+    const status = validStatuses.includes(body.status?.toLowerCase()) ? body.status.toLowerCase() : "planned"
 
     const updateData: any = {
       updated_at: new Date().toISOString(),
@@ -120,6 +120,8 @@ export async function PUT(
     if (body.priority !== undefined) updateData.priority = body.priority
     if (body.due_date !== undefined) updateData.due_date = body.due_date
 
+    console.log("[v0] Updating task:", { id: body.id, status: status, data: updateData })
+
     const { data: task, error } = await supabase
       .from("project_tasks")
       .update(updateData)
@@ -127,7 +129,10 @@ export async function PUT(
       .select()
       .single()
 
-    if (error) throw error
+    if (error) {
+      console.error("[v0] Database error updating task:", error)
+      throw error
+    }
 
     // Update phase progress based on task completion
     await updatePhaseProgressWeighted(supabase, timelineId)
