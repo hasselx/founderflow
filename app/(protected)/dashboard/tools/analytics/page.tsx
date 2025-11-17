@@ -13,7 +13,7 @@ import { ChartLineMultiple } from "@/components/charts/chart-line-multiple"
 
 const STATUS_COLORS = {
   completed: "#10b981",
-  "in-progress": "#3b82f6",
+  in_progress: "#3b82f6",
   upcoming: "#f59e0b",
   planned: "#94a3b8",
 }
@@ -70,7 +70,7 @@ export default function AnalyticsPage() {
 
         const allTasks = timelines.flatMap(t => t.project_tasks || [])
         const completedTasks = allTasks.filter(t => t.status === "completed")
-        const inProgressTasks = allTasks.filter(t => t.status === "in-progress")
+        const inProgressTasks = allTasks.filter(t => t.status === "in_progress")
         const upcomingTasks = allTasks.filter(t => t.status === "upcoming")
         const plannedTasks = allTasks.filter(t => t.status === "planned")
 
@@ -114,7 +114,7 @@ export default function AnalyticsPage() {
 
         setTaskDistribution([
           { name: "Completed", value: completedTasks.length, color: STATUS_COLORS.completed },
-          { name: "In Progress", value: inProgressTasks.length, color: STATUS_COLORS["in-progress"] },
+          { name: "In Progress", value: inProgressTasks.length, color: STATUS_COLORS.in_progress },
           { name: "Upcoming", value: upcomingTasks.length, color: STATUS_COLORS.upcoming },
           { name: "Planned", value: plannedTasks.length, color: STATUS_COLORS.planned },
         ])
@@ -127,7 +127,7 @@ export default function AnalyticsPage() {
             return date.getMonth() === monthIndex - 1
           })
           const completedInMonth = monthTasks.filter(t => t.status === "completed").length
-          const inProgressInMonth = monthTasks.filter(t => t.status === "in-progress").length
+          const inProgressInMonth = monthTasks.filter(t => t.status === "in_progress").length
           const upcomingInMonth = monthTasks.filter(t => t.status === "upcoming").length
           const plannedInMonth = monthTasks.filter(t => t.status === "planned").length
           

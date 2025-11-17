@@ -100,12 +100,20 @@ export async function PUT(
       return NextResponse.json({ error: "Task ID is required" }, { status: 400 })
     }
 
-    const validStatuses = ["planned", "upcoming", "in_progress", "completed"]
-    const status = validStatuses.includes(body.status?.toLowerCase()) ? body.status.toLowerCase() : "planned"
+    const statusMap: { [key: string]: string } = {
+      "planned": "planned",
+      "upcoming": "upcoming",
+      "in-progress": "in_progress",
+      "in_progress": "in_progress",
+      "completed": "completed"
+    }
+    
+    const normalizedStatus = statusMap[body.status?.toLowerCase()] || "planned"
+    console.log("[v0] Status normalization:", { input: body.status, output: normalizedStatus })
 
     const updateData: any = {
       updated_at: new Date().toISOString(),
-      status: status,
+      status: normalizedStatus,
     }
 
     if (body.title !== undefined) updateData.title = body.title
@@ -120,7 +128,7 @@ export async function PUT(
     if (body.priority !== undefined) updateData.priority = body.priority
     if (body.due_date !== undefined) updateData.due_date = body.due_date
 
-    console.log("[v0] Updating task:", { id: body.id, status: status, data: updateData })
+    console.log("[v0] Updating task with:", { id: body.id, updateData })
 
     const { data: task, error } = await supabase
       .from("project_tasks")

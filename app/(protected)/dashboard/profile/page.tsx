@@ -6,17 +6,20 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import Link from "next/link"
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Upload } from 'lucide-react'
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [message, setMessage] = useState("")
   const [profile, setProfile] = useState({
     full_name: "",
     email: "",
     role: "",
     phone: "",
+    avatar_url: "",
   })
 
   useEffect(() => {
@@ -31,7 +34,7 @@ export default function ProfilePage() {
 
         const { data: userData } = await supabase
           .from("users")
-          .select("full_name, email, role")
+          .select("full_name, email, role, avatar_url")
           .eq("id", user.id)
           .single()
 
@@ -41,6 +44,7 @@ export default function ProfilePage() {
             email: userData.email || user.email || "",
             role: userData.role || "",
             phone: "",
+            avatar_url: userData.avatar_url || "",
           })
         }
       } catch (error) {
@@ -52,6 +56,48 @@ export default function ProfilePage() {
 
     fetchProfile()
   }, [])
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      setUploading(true)
+      const file = e.target.files?.[0]
+      if (!file) return
+
+      const supabase = getSupabaseClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${user.id}-avatar.${fileExt}`
+      const filePath = `avatars/${fileName}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true })
+
+      if (uploadError) throw uploadError
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath)
+
+      const { error: updateError } = await supabase
+        .from("users")
+        .update({ avatar_url: publicUrl })
+        .eq("id", user.id)
+
+      if (updateError) throw updateError
+
+      setProfile({ ...profile, avatar_url: publicUrl })
+      setMessage("Avatar updated successfully!")
+      setTimeout(() => setMessage(""), 3000)
+    } catch (error) {
+      console.error("[v0] Error uploading avatar:", error)
+      setMessage("Error uploading avatar. Please try again.")
+    } finally {
+      setUploading(false)
+    }
+  }
 
   const handleSave = async () => {
     try {
@@ -111,10 +157,32 @@ export default function ProfilePage() {
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-foreground">Profile Picture</h2>
             <div className="flex items-end gap-4">
-              <div className="w-24 h-24 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-2xl">
-                {(profile.full_name || profile.email || "U").charAt(0).toUpperCase()}
-              </div>
+              <Avatar className="w-24 h-24">
+                <AvatarImage src={profile.avatar_url || "/placeholder.svg"} alt={profile.full_name} />
+                <AvatarFallback className="bg-primary text-primary-foreground text-xl font-bold">
+                  {(profile.full_name || profile.email || "U").charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <label className="relative">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={uploading}
+                  className="gap-2"
+                >
+                  <Upload className="w-4 h-4" />
+                  {uploading ? "Uploading..." : "Upload Avatar"}
+                </Button>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  disabled={uploading}
+                  className="hidden"
+                />
+              </label>
             </div>
+            <p className="text-xs text-muted-foreground">JPG, PNG or GIF (Max 5MB)</p>
           </div>
 
           <div className="space-y-2">
