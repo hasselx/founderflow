@@ -65,6 +65,7 @@ export default function ProjectPlannerClient({
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
   const [tasks, setTasks] = useState<Record<string, Task[]>>({})
+  const [phaseFilter, setPhaseFilter] = useState<string>("all")
 
   const [newPhase, setNewPhase] = useState({
     phase_name: "",
