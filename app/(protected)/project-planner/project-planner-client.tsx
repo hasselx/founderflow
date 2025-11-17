@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Calendar, CheckSquare, Users, BarChart3, Bell, Plus, X, Loader2 } from 'lucide-react'
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -92,10 +92,12 @@ export default function ProjectPlannerClient({
 
   const totalTasks = timelines?.length || 0
   const completedTasks = timelines?.filter((t) => t.status === "completed").length || 0
-  const overallProgress =
-    timelines && timelines.length > 0
-      ? Math.round(timelines.reduce((sum, t) => sum + (t.progress_percentage || 0), 0) / timelines.length)
-      : 0
+  const overallProgress = useMemo(() => {
+    if (!timelines || timelines.length === 0) return 0
+    return Math.round(
+      timelines.reduce((sum, t) => sum + (t.progress_percentage || 0), 0) / timelines.length
+    )
+  }, [timelines])
   const pendingDeadlines = timelines?.filter((t) => t.status === "in_progress").length || 0
 
   const projectTools = [
@@ -222,11 +224,32 @@ export default function ProjectPlannerClient({
     }
   }
 
+  const recalculateProgress = async (timelineId: string) => {
+    try {
+      const ideaId = timelines.find(t => t.id === timelineId)?.idea_id
+      if (!ideaId) return
+
+      const timelineRes = await fetch(`/api/business-plan/${ideaId}/timeline`)
+      const timelineData = await timelineRes.json()
+      if (timelineData.timelines) {
+        setTimelines(timelineData.timelines)
+      }
+    } catch (err) {
+      console.error("[v0] Recalculate progress error:", err)
+    }
+  }
+
   const handleUpdateTaskStatus = async (
     timelineId: string,
     taskId: string,
     newStatus: string
   ) => {
+    const phaseTasks = tasks[timelineId] || []
+    const updatedTasks = phaseTasks.map(t => 
+      t.id === taskId ? { ...t, status: newStatus } : t
+    )
+    setTasks(prev => ({ ...prev, [timelineId]: updatedTasks }))
+
     try {
       const ideaId = timelines.find(t => t.id === timelineId)?.idea_id
       if (!ideaId) return
@@ -237,8 +260,6 @@ export default function ProjectPlannerClient({
         'in_progress': 50,
         'completed': 100
       }
-
-      console.log("[v0] Updating task status to:", newStatus)
       
       const res = await fetch(
         `/api/business-plan/${ideaId}/timeline/${timelineId}/tasks`,
@@ -254,26 +275,22 @@ export default function ProjectPlannerClient({
       )
 
       const data = await res.json()
-      console.log("[v0] Update response:", data)
 
       if (res.ok) {
-        await loadTasks(timelineId)
-        const timelineRes = await fetch(`/api/business-plan/${ideaId}/timeline`)
-        const timelineData = await timelineRes.json()
-        if (timelineData.timelines) {
-          setTimelines(timelineData.timelines)
-        }
+        await Promise.all([
+          loadTasks(timelineId),
+          recalculateProgress(timelineId)
+        ])
       } else {
-        console.error("[v0] Failed to update task:", data.error)
+        setTasks(prev => ({ ...prev, [timelineId]: phaseTasks }))
         setError(data.error || "Failed to update task status")
       }
     } catch (err) {
+      setTasks(prev => ({ ...prev, [timelineId]: phaseTasks }))
       console.error("[v0] Update task status error:", err)
       setError("Failed to update task status")
     }
   }
-
-  const [phaseFilter, setPhaseFilter] = useState<"all" | "relevant" | "date-added">("all")
 
   const getFilteredTimelines = () => {
     let filtered = [...timelines]
@@ -771,11 +788,11 @@ export default function ProjectPlannerClient({
       </Dialog>
 
       <Dialog open={calendarOpen} onOpenChange={setCalendarOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>Project Timeline Calendar</DialogTitle>
             <DialogDescription>
-              View tasks and deadlines
+              View tasks and deadlines across all project phases
             </DialogDescription>
           </DialogHeader>
           <CalendarWithEvents events={getCalendarEvents()} />

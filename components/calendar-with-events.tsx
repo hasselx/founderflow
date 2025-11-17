@@ -32,69 +32,71 @@ export function CalendarWithEvents({ events }: CalendarWithEventsProps) {
   }, [date, events])
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Project Timeline Calendar</CardTitle>
-          <CardDescription>Click on dates with dots to see scheduled tasks</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Calendar
-            mode="single"
-            selected={date}
-            onSelect={setDate}
-            className="rounded-lg border"
-            classNames={{
-              day: "relative",
-            }}
-            components={{
-              DayButton: (props: any) => {
-                const dayDate = props.day.date
-                const hasEvent = datesWithEvents.has(dayDate.toDateString())
-                return (
-                  <button
-                    {...props}
-                    className={`relative aspect-square p-2 text-sm ${props.className}`}
-                  >
-                    {props.children}
-                    {hasEvent && (
-                      <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full bg-primary"></div>
-                    )}
-                  </button>
-                )
-              }
-            }}
-          />
-        </CardContent>
-      </Card>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-h-[70vh]">
+      <div>
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold">Click on dates with dots to see scheduled tasks</h3>
+        </div>
+        <Calendar
+          mode="single"
+          selected={date}
+          onSelect={setDate}
+          className="rounded-lg border"
+          classNames={{
+            day: "relative",
+          }}
+          components={{
+            DayButton: (props: any) => {
+              const dayDate = props.day.date
+              const hasEvent = datesWithEvents.has(dayDate.toDateString())
+              return (
+                <button
+                  {...props}
+                  className={`relative aspect-square p-2 text-sm ${props.className}`}
+                >
+                  {props.children}
+                  {hasEvent && (
+                    <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary"></div>
+                  )}
+                </button>
+              )
+            }
+          }}
+        />
+      </div>
 
-      {selectedDateEvents.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">
+      <div className="overflow-y-auto max-h-[60vh]">
+        {selectedDateEvents.length > 0 ? (
+          <div>
+            <h3 className="text-lg font-semibold mb-4">
               Events for {date?.toLocaleDateString()}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
+            </h3>
+            <div className="space-y-3">
               {selectedDateEvents.map(event => (
-                <div key={event.id} className="flex items-start gap-3 p-3 bg-muted rounded-lg">
-                  <div className={`w-2 h-2 rounded-full mt-1 flex-shrink-0 ${
+                <div key={event.id} className="flex items-start gap-3 p-4 bg-muted rounded-lg border">
+                  <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
                     event.status === 'completed' ? 'bg-green-500' :
                     event.status === 'in_progress' ? 'bg-blue-500' :
                     event.status === 'upcoming' ? 'bg-orange-500' :
                     'bg-gray-400'
                   }`} />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">{event.title}</p>
-                    <p className="text-xs text-muted-foreground capitalize">{event.status}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium break-words">{event.title}</p>
+                    <p className="text-xs text-muted-foreground capitalize mt-1">{event.status.replace('_', ' ')}</p>
                   </div>
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        ) : (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center text-muted-foreground">
+              <p className="text-sm">No events scheduled for this date</p>
+              <p className="text-xs mt-1">Select a date with a dot to view tasks</p>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
