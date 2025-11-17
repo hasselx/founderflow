@@ -1,12 +1,15 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { ArrowUpIcon, ArrowDownIcon, TrendingUp, Clock, Zap, Download, ArrowLeft } from 'lucide-react'
 import { useEffect, useState } from "react"
 import { useRouter } from 'next/navigation'
 import { getSupabaseClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
+import { Toggle } from "@/components/ui/toggle"
+import { ChartRadarLegend } from "@/components/charts/chart-radar-legend"
+import { ChartLineMultiple } from "@/components/charts/chart-line-multiple"
 
 const STATUS_COLORS = {
   completed: "#10b981",
@@ -19,6 +22,7 @@ export default function AnalyticsPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [timeRange, setTimeRange] = useState<"week" | "month" | "quarter">("week")
+  const [chartView, setChartView] = useState<"line" | "radar">("line")
   
   const [metrics, setMetrics] = useState({
     overallProgress: 0,
@@ -118,8 +122,8 @@ export default function AnalyticsPage() {
         const months = ["Aug", "Sep", "Oct", "Nov"]
         const monthlyData = months.map((month, idx) => ({
           month,
-          progress: Math.min(75 + idx * 5, 95),
-          tasks: Math.min(80 + idx * 4, 92),
+          desktop: Math.min(75 + idx * 5, 95),
+          mobile: Math.min(80 + idx * 4, 92),
         }))
         setMonthlyTrends(monthlyData)
 
@@ -295,21 +299,34 @@ export default function AnalyticsPage() {
         </div>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Monthly Trends</CardTitle>
+          <CardHeader className="flex-row items-center justify-between space-y-0">
+            <div>
+              <CardTitle>Monthly Trends</CardTitle>
+              <CardDescription>Track progress metrics over time</CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={`text-xs font-medium ${chartView === 'line' ? 'text-foreground' : 'text-muted-foreground'}`}>
+                Line
+              </span>
+              <Toggle
+                pressed={chartView === "radar"}
+                onPressedChange={() => setChartView(chartView === "line" ? "radar" : "line")}
+                className="h-8"
+                aria-label="Toggle chart view"
+              >
+                ◉
+              </Toggle>
+              <span className={`text-xs font-medium ${chartView === 'radar' ? 'text-foreground' : 'text-muted-foreground'}`}>
+                Radar
+              </span>
+            </div>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={monthlyTrends}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="progress" stroke="#8b5cf6" strokeWidth={2} dot={{ r: 4 }} />
-                <Line type="monotone" dataKey="tasks" stroke="#3b82f6" strokeWidth={2} dot={{ r: 4 }} />
-              </LineChart>
-            </ResponsiveContainer>
+            {chartView === "line" ? (
+              <ChartLineMultiple data={monthlyTrends} />
+            ) : (
+              <ChartRadarLegend data={monthlyTrends} />
+            )}
           </CardContent>
         </Card>
       </div>

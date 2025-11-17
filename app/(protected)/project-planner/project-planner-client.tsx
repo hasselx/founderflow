@@ -229,11 +229,13 @@ export default function ProjectPlannerClient({
 
       const completionMap: Record<string, number> = {
         'planned': 0,
-        'upcoming': 0,
+        'upcoming': 25,
         'in_progress': 50,
         'completed': 100
       }
 
+      console.log("[v0] Updating task status to:", newStatus)
+      
       const res = await fetch(
         `/api/business-plan/${ideaId}/timeline/${timelineId}/tasks`,
         {
@@ -247,6 +249,9 @@ export default function ProjectPlannerClient({
         }
       )
 
+      const data = await res.json()
+      console.log("[v0] Update response:", data)
+
       if (res.ok) {
         await loadTasks(timelineId)
         const timelineRes = await fetch(`/api/business-plan/${ideaId}/timeline`)
@@ -254,9 +259,13 @@ export default function ProjectPlannerClient({
         if (timelineData.timelines) {
           setTimelines(timelineData.timelines)
         }
+      } else {
+        console.error("[v0] Failed to update task:", data.error)
+        setError(data.error || "Failed to update task status")
       }
     } catch (err) {
       console.error("[v0] Update task status error:", err)
+      setError("Failed to update task status")
     }
   }
 
