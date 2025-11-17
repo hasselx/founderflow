@@ -87,6 +87,7 @@ export default function ProjectPlannerClient({
   })
 
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [calendarOpen, setCalendarOpen] = useState(false)
 
   const totalTasks = timelines?.length || 0
   const completedTasks = timelines?.filter((t) => t.status === "completed").length || 0
@@ -414,20 +415,7 @@ export default function ProjectPlannerClient({
                 </Select>
                 <button
                   className="px-4 py-2 rounded-lg border border-border bg-background hover:bg-muted transition-colors"
-                  onClick={() => {
-                    const calendarDialog = document.createElement('div')
-                    calendarDialog.id = 'calendar-modal'
-                    calendarDialog.innerHTML = `
-                      <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                        <div class="bg-white rounded-lg shadow-lg p-6 max-w-md w-full mx-4">
-                          <h2 class="text-xl font-bold mb-4">Project Timeline Calendar</h2>
-                          <div id="calendar-container"></div>
-                          <button onclick="document.getElementById('calendar-modal').remove()" class="mt-4 w-full px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">Close</button>
-                        </div>
-                      </div>
-                    `
-                    document.body.appendChild(calendarDialog)
-                  }}
+                  onClick={() => setCalendarOpen(true)}
                 >
                   View Calendar
                 </button>
@@ -760,6 +748,20 @@ export default function ProjectPlannerClient({
               {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Adding...</> : "Add Task"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={calendarOpen} onOpenChange={setCalendarOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Project Timeline Calendar</DialogTitle>
+            <DialogDescription>
+              View tasks and deadlines
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Calendar will be added here */}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

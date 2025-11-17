@@ -60,7 +60,7 @@ export async function POST(
         timeline_id: timelineId,
         title: body.title,
         description: body.description || null,
-        status: "pending",
+        status: "planned",
         completion_percentage: completionPercentage,
         contribution_percentage: contributionPercentage,
         priority: body.priority || "medium",

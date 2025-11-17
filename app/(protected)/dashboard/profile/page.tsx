@@ -63,19 +63,39 @@ export default function ProfilePage() {
       const file = e.target.files?.[0]
       if (!file) return
 
+      if (file.size > 5 * 1024 * 1024) {
+        setMessage("File size must be less than 5MB")
+        setUploading(false)
+        return
+      }
+
+      if (!file.type.startsWith('image/')) {
+        setMessage("Please upload an image file")
+        setUploading(false)
+        return
+      }
+
       const supabase = getSupabaseClient()
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      if (!user) {
+        setMessage("User not authenticated")
+        setUploading(false)
+        return
+      }
 
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${user.id}-avatar.${fileExt}`
+      const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+      const fileName = `${user.id}-avatar-${Date.now()}.${fileExt}`
       const filePath = `avatars/${fileName}`
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, file, { upsert: true })
 
-      if (uploadError) throw uploadError
+      if (uploadError) {
+        console.error("[v0] Upload error:", uploadError)
+        setMessage(`Upload error: ${uploadError.message}`)
+        return
+      }
 
       const { data: { publicUrl } } = supabase.storage
         .from('avatars')
@@ -86,7 +106,11 @@ export default function ProfilePage() {
         .update({ avatar_url: publicUrl })
         .eq("id", user.id)
 
-      if (updateError) throw updateError
+      if (updateError) {
+        console.error("[v0] Update error:", updateError)
+        setMessage(`Update error: ${updateError.message}`)
+        return
+      }
 
       setProfile({ ...profile, avatar_url: publicUrl })
       setMessage("Avatar updated successfully!")
