@@ -100,13 +100,16 @@ export async function PUT(
       return NextResponse.json({ error: "Task ID is required" }, { status: 400 })
     }
 
+    const validStatuses = ["planned", "upcoming", "in_progress", "completed", "pending"]
+    const status = validStatuses.includes(body.status) ? body.status : "pending"
+
     const updateData: any = {
       updated_at: new Date().toISOString(),
+      status: status,
     }
 
     if (body.title !== undefined) updateData.title = body.title
     if (body.description !== undefined) updateData.description = body.description
-    if (body.status !== undefined) updateData.status = body.status
     if (body.completion_percentage !== undefined) {
       updateData.completion_percentage = Math.min(100, Math.max(0, body.completion_percentage))
     }

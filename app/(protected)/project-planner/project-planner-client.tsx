@@ -86,6 +86,8 @@ export default function ProjectPlannerClient({
     due_date: "",
   })
 
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+
   const totalTasks = timelines?.length || 0
   const completedTasks = timelines?.filter((t) => t.status === "completed").length || 0
   const overallProgress =
@@ -296,16 +298,14 @@ export default function ProjectPlannerClient({
 
   return (
     <div className="flex min-h-screen bg-background">
-      <aside className="w-64 border-r border-border bg-card p-6 flex-shrink-0 flex flex-col">
+      <aside className={`${sidebarOpen ? 'w-64' : 'w-20'} border-r border-border bg-card p-6 flex-shrink-0 flex flex-col transition-all duration-300`}>
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-bold text-foreground">Project Tools</h2>
+          {sidebarOpen && <h2 className="text-lg font-bold text-foreground">Project Tools</h2>}
           <button
             className="text-muted-foreground hover:text-foreground transition-colors p-1 hover:bg-muted rounded"
-            onClick={() => {
-              console.log("[v0] Collapse button clicked - functionality can be added")
-            }}
+            onClick={() => setSidebarOpen(!sidebarOpen)}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className={`w-5 h-5 transition-transform ${sidebarOpen ? 'rotate-0' : 'rotate-180'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
@@ -316,9 +316,10 @@ export default function ProjectPlannerClient({
               key={tool.name}
               href={tool.href}
               className="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+              title={tool.name}
             >
-              <tool.icon className="w-5 h-5" />
-              <span className="font-medium">{tool.name}</span>
+              <tool.icon className="w-5 h-5 flex-shrink-0" />
+              {sidebarOpen && <span className="font-medium">{tool.name}</span>}
             </Link>
           ))}
         </nav>

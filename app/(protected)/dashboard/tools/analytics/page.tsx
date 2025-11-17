@@ -120,11 +120,22 @@ export default function AnalyticsPage() {
         ])
 
         const months = ["Aug", "Sep", "Oct", "Nov"]
-        const monthlyData = months.map((month, idx) => ({
-          month,
-          desktop: Math.min(75 + idx * 5, 95),
-          mobile: Math.min(80 + idx * 4, 92),
-        }))
+        const monthlyData = months.map((month, idx) => {
+          const monthIndex = idx + 8 // August = 8
+          const monthTasks = allTasks.filter(t => {
+            const date = new Date(t.updated_at || t.created_at)
+            return date.getMonth() === monthIndex - 1
+          })
+          const completedInMonth = monthTasks.filter(t => t.status === "completed").length
+          const desktopPercentage = monthTasks.length > 0 ? Math.round((completedInMonth / monthTasks.length) * 100) : 0
+          const mobilePercentage = Math.max(0, desktopPercentage - 5) // Slightly lower mobile data
+          
+          return {
+            month,
+            desktop: Math.min(desktopPercentage, 100),
+            mobile: Math.min(mobilePercentage, 100),
+          }
+        })
         setMonthlyTrends(monthlyData)
 
       } catch (error) {
