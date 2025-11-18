@@ -332,13 +332,6 @@ export default function ProjectPlannerClient({
 
   useEffect(() => {
     timelines.forEach(timeline => loadTasks(timeline.id))
-    
-    // Auto-refresh progress every 2 seconds to reflect real-time updates
-    const refreshInterval = setInterval(() => {
-      timelines.forEach(timeline => recalculateProgress(timeline.id))
-    }, 2000)
-    
-    return () => clearInterval(refreshInterval)
   }, [timelines.length])
 
   return (

@@ -32,8 +32,8 @@ export function CalendarWithEvents({ events }: CalendarWithEventsProps) {
   }, [date, events])
 
   return (
-    <div className="flex gap-6 h-[500px]">
-      <div className="flex-shrink-0 w-80">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-h-[70vh]">
+      <div>
         <div className="mb-4">
           <h3 className="text-lg font-semibold">Click on dates with dots to see scheduled tasks</h3>
         </div>
@@ -41,7 +41,7 @@ export function CalendarWithEvents({ events }: CalendarWithEventsProps) {
           mode="single"
           selected={date}
           onSelect={setDate}
-          className="rounded-lg border w-full"
+          className="rounded-lg border"
           classNames={{
             day: "relative",
           }}
@@ -65,7 +65,7 @@ export function CalendarWithEvents({ events }: CalendarWithEventsProps) {
         />
       </div>
 
-      <div className="flex-1 overflow-y-auto border-l border-border pl-6">
+      <div className="overflow-y-auto max-h-[60vh]">
         {selectedDateEvents.length > 0 ? (
           <div>
             <h3 className="text-lg font-semibold mb-4">
