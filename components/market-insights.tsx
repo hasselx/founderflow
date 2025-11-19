@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { Loader2, TrendingUp, ExternalLink } from 'lucide-react'
 import { getSupabaseClient } from "@/lib/supabase/client"
 
@@ -43,7 +44,6 @@ export default function MarketInsights({ domains }: { domains?: string[] }) {
         if (uniqueDomains.length > 0 && !selectedDomain) {
           setSelectedDomain(uniqueDomains[0])
         }
-        console.log("[v0] Fetched domains from DB:", uniqueDomains)
       } catch (error) {
         console.error("[v0] Error fetching domains:", error)
       }
@@ -120,33 +120,35 @@ export default function MarketInsights({ domains }: { domains?: string[] }) {
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : insights.length > 0 && insights[0].trends.length > 0 ? (
-        <div className="grid gap-4">
-          {insights[0].trends.map((trend, index) => (
-            <Card key={index} className="p-6 hover:shadow-lg transition-shadow">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-accent flex-shrink-0" />
-                    <h3 className="font-bold text-foreground line-clamp-2">{trend.title}</h3>
+        <ScrollArea className="h-[500px] rounded-lg border p-4">
+          <div className="grid gap-4 pr-4">
+            {insights[0].trends.map((trend, index) => (
+              <Card key={index} className="p-6 hover:shadow-lg transition-shadow">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5 text-accent flex-shrink-0" />
+                      <h3 className="font-bold text-foreground line-clamp-2">{trend.title}</h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground line-clamp-2">{trend.description}</p>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2">
+                      <span className="font-medium">{trend.source}</span>
+                      <span>•</span>
+                      <span>{new Date(trend.date).toLocaleDateString()}</span>
+                    </div>
                   </div>
-                  <p className="text-sm text-muted-foreground line-clamp-2">{trend.description}</p>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2">
-                    <span className="font-medium">{trend.source}</span>
-                    <span>•</span>
-                    <span>{new Date(trend.date).toLocaleDateString()}</span>
-                  </div>
+                  {trend.url && trend.url !== "#" && (
+                    <a href={trend.url} target="_blank" rel="noopener noreferrer" className="flex-shrink-0">
+                      <Button variant="ghost" size="sm" className="gap-2">
+                        Read <ExternalLink className="h-4 w-4" />
+                      </Button>
+                    </a>
+                  )}
                 </div>
-                {trend.url && trend.url !== "#" && (
-                  <a href={trend.url} target="_blank" rel="noopener noreferrer" className="flex-shrink-0">
-                    <Button variant="ghost" size="sm" className="gap-2">
-                      Read <ExternalLink className="h-4 w-4" />
-                    </Button>
-                  </a>
-                )}
-              </div>
-            </Card>
-          ))}
-        </div>
+              </Card>
+            ))}
+          </div>
+        </ScrollArea>
       ) : (
         <Card className="p-12 text-center">
           <p className="text-muted-foreground">

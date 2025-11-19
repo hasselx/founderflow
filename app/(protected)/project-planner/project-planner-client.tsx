@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
-import { Calendar, CheckSquare, Users, BarChart3, Bell, Plus, X, Loader2 } from 'lucide-react'
+import { Calendar, CheckSquare, Users, BarChart3, Bell, Plus, X, Loader2, Pencil, Trash2 } from 'lucide-react'
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { CalendarWithEvents } from "@/components/calendar-with-events"
+import { ChartOverallProgress } from "@/components/charts/chart-overall-progress"
 
 interface Timeline {
   id: string
@@ -88,18 +89,55 @@ export default function ProjectPlannerClient({
     due_date: "",
   })
 
+  const [editingTask, setEditingTask] = useState<Task | null>(null)
+  const [editTaskOpen, setEditTaskOpen] = useState(false)
+  const [editingTaskTimelineId, setEditingTaskTimelineId] = useState<string | null>(null)
+
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [calendarOpen, setCalendarOpen] = useState(false)
 
-  const totalTasks = timelines?.length || 0
-  const completedTasks = timelines?.filter((t) => t.status === "completed").length || 0
+  const totalTasks = useMemo(() => {
+    return timelines.flatMap(t => tasks[t.id] || []).length
+  }, [timelines, tasks])
+
+  const completedTasks = useMemo(() => {
+    return timelines.flatMap(t => (tasks[t.id] || []).filter(task => task.status === 'completed')).length
+  }, [timelines, tasks])
+
+  const pendingDeadlines = useMemo(() => {
+    const now = new Date()
+    return timelines.flatMap(t => (tasks[t.id] || []).filter(task => {
+      if (!task.due_date) return false
+      const dueDate = new Date(task.due_date)
+      return task.status !== 'completed' && dueDate >= now
+    })).length
+  }, [timelines, tasks])
+
   const overallProgress = useMemo(() => {
     if (!timelines || timelines.length === 0) return 0
-    return Math.round(
-      timelines.reduce((sum, t) => sum + (t.progress_percentage || 0), 0) / timelines.length
-    )
-  }, [timelines])
-  const pendingDeadlines = timelines?.filter((t) => t.status === "in_progress").length || 0
+    const totalTasksCompleted = timelines.reduce((sum, t) => sum + (tasks[t.id] || []).filter(task => task.status === 'completed').length, 0)
+    const totalPhaseTasks = timelines.reduce((sum, t) => sum + (t.total_tasks || 0), 0)
+    return totalPhaseTasks > 0 ? Math.round((totalTasksCompleted / totalPhaseTasks) * 100) : 0
+  }, [timelines, tasks])
+
+  const taskBreakdown = useMemo(() => {
+    const breakdown = {
+      completed: 0,
+      inProgress: 0,
+      upcoming: 0,
+      planned: 0,
+    }
+    timelines.forEach(timeline => {
+      const phaseTasks = tasks[timeline.id] || []
+      phaseTasks.forEach(task => {
+        if (task.status === 'completed') breakdown.completed++
+        else if (task.status === 'in_progress') breakdown.inProgress++
+        else if (task.status === 'upcoming') breakdown.upcoming++
+        else if (task.status === 'planned') breakdown.planned++
+      })
+    })
+    return breakdown
+  }, [timelines, tasks])
 
   const projectTools = [
     { name: "Timeline", icon: Calendar, href: "/dashboard/tools/timeline" },
@@ -293,6 +331,87 @@ export default function ProjectPlannerClient({
     }
   }
 
+  const handleDeleteTask = async (timelineId: string, taskId: string) => {
+    if (!confirm("Are you sure you want to delete this task?")) return
+
+    if (!taskId) {
+      setError("Task ID is missing")
+      return
+    }
+
+    try {
+      const ideaId = timelines.find(t => t.id === timelineId)?.idea_id
+      if (!ideaId) return
+
+      const res = await fetch(
+        `/api/business-plan/${ideaId}/timeline/${timelineId}/tasks`,
+        {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: taskId }),
+        }
+      )
+
+      if (res.ok) {
+        await Promise.all([
+          loadTasks(timelineId),
+          recalculateProgress(timelineId)
+        ])
+        setSuccess(true)
+        setTimeout(() => setSuccess(false), 3000)
+      } else {
+        const data = await res.json()
+        setError(data.error || "Failed to delete task")
+      }
+    } catch (err) {
+      console.error("[v0] Delete task error:", err)
+      setError("Failed to delete task")
+    }
+  }
+
+  const handleEditTask = async () => {
+    if (!editingTask || !editingTaskTimelineId) return
+
+    setSaving(true)
+    setError("")
+
+    try {
+      const ideaId = timelines.find(t => t.id === editingTaskTimelineId)?.idea_id
+      if (!ideaId) return
+
+      const res = await fetch(
+        `/api/business-plan/${ideaId}/timeline/${editingTaskTimelineId}/tasks`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(editingTask),
+        }
+      )
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error || "Failed to update task")
+        return
+      }
+
+      await Promise.all([
+        loadTasks(editingTaskTimelineId),
+        recalculateProgress(editingTaskTimelineId)
+      ])
+      setEditTaskOpen(false)
+      setEditingTask(null)
+      setEditingTaskTimelineId(null)
+      setSuccess(true)
+      setTimeout(() => setSuccess(false), 3000)
+    } catch (err) {
+      console.error("[v0] Edit task error:", err)
+      setError("Failed to update task")
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const getFilteredTimelines = () => {
     let filtered = [...timelines]
     
@@ -396,17 +515,17 @@ export default function ProjectPlannerClient({
           )}
 
           <div className="grid grid-cols-3 gap-6 mb-8">
-            <div className="bg-card rounded-lg border border-border p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="10" strokeWidth="2" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6l4 2" />
-                  </svg>
-                </div>
+            <div className="bg-card rounded-lg border border-border p-4 flex flex-col items-center">
+              <div className="mb-2 w-full">
+                <h3 className="text-sm font-semibold text-foreground">Overall Progress</h3>
               </div>
-              <div className="text-4xl font-bold text-foreground mb-1">{overallProgress}%</div>
-              <div className="text-sm text-muted-foreground">Overall Progress</div>
+              <ChartOverallProgress
+                total={totalTasks}
+                completed={taskBreakdown.completed}
+                inProgress={taskBreakdown.inProgress}
+                upcoming={taskBreakdown.upcoming}
+                planned={taskBreakdown.planned}
+              />
             </div>
 
             <div className="bg-card rounded-lg border border-border p-6">
@@ -581,6 +700,24 @@ export default function ProjectPlannerClient({
                                       <SelectItem value="completed">Completed</SelectItem>
                                     </SelectContent>
                                   </Select>
+                                  <button
+                                    className="p-1 hover:bg-muted rounded transition-colors"
+                                    onClick={() => {
+                                      setEditingTask(task)
+                                      setEditingTaskTimelineId(timeline.id)
+                                      setEditTaskOpen(true)
+                                    }}
+                                    title="Edit task"
+                                  >
+                                    <Pencil className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                                  </button>
+                                  <button
+                                    className="p-1 hover:bg-destructive/10 rounded transition-colors"
+                                    onClick={() => handleDeleteTask(timeline.id, task.id)}
+                                    title="Delete task"
+                                  >
+                                    <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" />
+                                  </button>
                                 </div>
                               </div>
                             )
@@ -788,8 +925,100 @@ export default function ProjectPlannerClient({
         </DialogContent>
       </Dialog>
 
+      <Dialog open={editTaskOpen} onOpenChange={setEditTaskOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Task</DialogTitle>
+            <DialogDescription>
+              Update task details and contribution percentage
+            </DialogDescription>
+          </DialogHeader>
+          {editingTask && (
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Task Title</label>
+                <Input
+                  value={editingTask.title}
+                  onChange={(e) => setEditingTask({ ...editingTask, title: e.target.value })}
+                  placeholder="e.g., Design user interface"
+                  className="mt-2"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Description</label>
+                <Textarea
+                  value={editingTask.description || ""}
+                  onChange={(e) => setEditingTask({ ...editingTask, description: e.target.value })}
+                  placeholder="Describe the task..."
+                  rows={2}
+                  className="mt-2"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">
+                  Contribution to Phase: {editingTask.contribution_percentage}%
+                </label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  What percentage of the phase does this task represent?
+                </p>
+                <Input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="5"
+                  value={editingTask.contribution_percentage}
+                  onChange={(e) =>
+                    setEditingTask({
+                      ...editingTask,
+                      contribution_percentage: parseInt(e.target.value),
+                    })
+                  }
+                  className="mt-2"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Priority</label>
+                  <Select
+                    value={editingTask.priority}
+                    onValueChange={(value) => setEditingTask({ ...editingTask, priority: value })}
+                  >
+                    <SelectTrigger className="mt-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="urgent">Urgent</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Due Date</label>
+                  <Input
+                    type="date"
+                    value={editingTask.due_date || ""}
+                    onChange={(e) => setEditingTask({ ...editingTask, due_date: e.target.value })}
+                    className="mt-2"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditTaskOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditTask} disabled={saving}>
+              {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving...</> : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={calendarOpen} onOpenChange={setCalendarOpen}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-3xl max-h-[80vh]">
           <DialogHeader>
             <DialogTitle>Project Timeline Calendar</DialogTitle>
             <DialogDescription>

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Toggle } from "@/components/ui/toggle"
 import { ChartRadarLegend } from "@/components/charts/chart-radar-legend"
 import { ChartLineMultiple } from "@/components/charts/chart-line-multiple"
+import { ChartTaskDistribution } from "@/components/charts/chart-task-distribution"
 
 const STATUS_COLORS = {
   completed: "#10b981",
@@ -281,33 +282,7 @@ export default function AnalyticsPage() {
               <CardTitle>Task Distribution</CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={taskDistribution}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={2}
-                    dataKey="value"
-                  >
-                    {taskDistribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="grid grid-cols-2 gap-4 mt-4">
-                {taskDistribution.map((item, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
-                    <span className="text-sm text-muted-foreground">{item.name}</span>
-                    <span className="text-sm font-medium ml-auto">{item.value}</span>
-                  </div>
-                ))}
-              </div>
+              <ChartTaskDistribution data={taskDistribution} />
             </CardContent>
           </Card>
         </div>
