@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
-import { Calendar, CheckSquare, Users, BarChart3, Bell, Plus, X, Loader2, Pencil, Trash2 } from 'lucide-react'
+import { Calendar, CheckSquare, Users, BarChart3, Bell, Loader2, Pencil, Trash2 } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,13 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CalendarWithEvents } from "@/components/calendar-with-events"
 import { ChartOverallProgress } from "@/components/charts/chart-overall-progress"
 
@@ -51,12 +45,12 @@ interface Task {
   due_date: string | null
 }
 
-export default function ProjectPlannerClient({ 
-  timelines: initialTimelines, 
-  ideas 
-}: { 
+export default function ProjectPlannerClient({
+  timelines: initialTimelines,
+  ideas,
+}: {
   timelines: Timeline[]
-  ideas: Idea[] 
+  ideas: Idea[]
 }) {
   const [timelines, setTimelines] = useState<Timeline[]>(initialTimelines)
   const [addPhaseOpen, setAddPhaseOpen] = useState(false)
@@ -97,25 +91,30 @@ export default function ProjectPlannerClient({
   const [calendarOpen, setCalendarOpen] = useState(false)
 
   const totalTasks = useMemo(() => {
-    return timelines.flatMap(t => tasks[t.id] || []).length
+    return timelines.flatMap((t) => tasks[t.id] || []).length
   }, [timelines, tasks])
 
   const completedTasks = useMemo(() => {
-    return timelines.flatMap(t => (tasks[t.id] || []).filter(task => task.status === 'completed')).length
+    return timelines.flatMap((t) => (tasks[t.id] || []).filter((task) => task.status === "completed")).length
   }, [timelines, tasks])
 
   const pendingDeadlines = useMemo(() => {
     const now = new Date()
-    return timelines.flatMap(t => (tasks[t.id] || []).filter(task => {
-      if (!task.due_date) return false
-      const dueDate = new Date(task.due_date)
-      return task.status !== 'completed' && dueDate >= now
-    })).length
+    return timelines.flatMap((t) =>
+      (tasks[t.id] || []).filter((task) => {
+        if (!task.due_date) return false
+        const dueDate = new Date(task.due_date)
+        return task.status !== "completed" && dueDate >= now
+      }),
+    ).length
   }, [timelines, tasks])
 
   const overallProgress = useMemo(() => {
     if (!timelines || timelines.length === 0) return 0
-    const totalTasksCompleted = timelines.reduce((sum, t) => sum + (tasks[t.id] || []).filter(task => task.status === 'completed').length, 0)
+    const totalTasksCompleted = timelines.reduce(
+      (sum, t) => sum + (tasks[t.id] || []).filter((task) => task.status === "completed").length,
+      0,
+    )
     const totalPhaseTasks = timelines.reduce((sum, t) => sum + (t.total_tasks || 0), 0)
     return totalPhaseTasks > 0 ? Math.round((totalTasksCompleted / totalPhaseTasks) * 100) : 0
   }, [timelines, tasks])
@@ -127,13 +126,13 @@ export default function ProjectPlannerClient({
       upcoming: 0,
       planned: 0,
     }
-    timelines.forEach(timeline => {
+    timelines.forEach((timeline) => {
       const phaseTasks = tasks[timeline.id] || []
-      phaseTasks.forEach(task => {
-        if (task.status === 'completed') breakdown.completed++
-        else if (task.status === 'in_progress') breakdown.inProgress++
-        else if (task.status === 'upcoming') breakdown.upcoming++
-        else if (task.status === 'planned') breakdown.planned++
+      phaseTasks.forEach((task) => {
+        if (task.status === "completed") breakdown.completed++
+        else if (task.status === "in_progress") breakdown.inProgress++
+        else if (task.status === "upcoming") breakdown.upcoming++
+        else if (task.status === "planned") breakdown.planned++
       })
     })
     return breakdown
@@ -149,14 +148,14 @@ export default function ProjectPlannerClient({
 
   const loadTasks = async (timelineId: string) => {
     try {
-      const ideaId = timelines.find(t => t.id === timelineId)?.idea_id
+      const ideaId = timelines.find((t) => t.id === timelineId)?.idea_id
       if (!ideaId) return
 
       const res = await fetch(`/api/business-plan/${ideaId}/timeline/${timelineId}/tasks`)
       const data = await res.json()
-      
+
       if (res.ok) {
-        setTasks(prev => ({ ...prev, [timelineId]: data.tasks || [] }))
+        setTasks((prev) => ({ ...prev, [timelineId]: data.tasks || [] }))
       }
     } catch (err) {
       console.error("[v0] Load tasks error:", err)
@@ -221,20 +220,17 @@ export default function ProjectPlannerClient({
     setError("")
 
     try {
-      const ideaId = timelines.find(t => t.id === selectedTimeline)?.idea_id
+      const ideaId = timelines.find((t) => t.id === selectedTimeline)?.idea_id
       if (!ideaId) {
         setError("Timeline not found")
         return
       }
 
-      const res = await fetch(
-        `/api/business-plan/${ideaId}/timeline/${selectedTimeline}/tasks`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(newTask),
-        }
-      )
+      const res = await fetch(`/api/business-plan/${ideaId}/timeline/${selectedTimeline}/tasks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newTask),
+      })
 
       const data = await res.json()
 
@@ -265,7 +261,7 @@ export default function ProjectPlannerClient({
 
   const recalculateProgress = async (timelineId: string) => {
     try {
-      const ideaId = timelines.find(t => t.id === timelineId)?.idea_id
+      const ideaId = timelines.find((t) => t.id === timelineId)?.idea_id
       if (!ideaId) return
 
       const timelineRes = await fetch(`/api/business-plan/${ideaId}/timeline`)
@@ -278,54 +274,42 @@ export default function ProjectPlannerClient({
     }
   }
 
-  const handleUpdateTaskStatus = async (
-    timelineId: string,
-    taskId: string,
-    newStatus: string
-  ) => {
+  const handleUpdateTaskStatus = async (timelineId: string, taskId: string, newStatus: string) => {
     const phaseTasks = tasks[timelineId] || []
-    const updatedTasks = phaseTasks.map(t => 
-      t.id === taskId ? { ...t, status: newStatus } : t
-    )
-    setTasks(prev => ({ ...prev, [timelineId]: updatedTasks }))
+    const updatedTasks = phaseTasks.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t))
+    setTasks((prev) => ({ ...prev, [timelineId]: updatedTasks }))
 
     try {
-      const ideaId = timelines.find(t => t.id === timelineId)?.idea_id
+      const ideaId = timelines.find((t) => t.id === timelineId)?.idea_id
       if (!ideaId) return
 
       const completionMap: Record<string, number> = {
-        'planned': 0,
-        'upcoming': 25,
-        'in_progress': 50,
-        'completed': 100
+        planned: 0,
+        upcoming: 25,
+        in_progress: 50,
+        completed: 100,
       }
-      
-      const res = await fetch(
-        `/api/business-plan/${ideaId}/timeline/${timelineId}/tasks`,
-        {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            id: taskId,
-            status: newStatus,
-            completion_percentage: completionMap[newStatus] || 0,
-          }),
-        }
-      )
+
+      const res = await fetch(`/api/business-plan/${ideaId}/timeline/${timelineId}/tasks`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: taskId,
+          status: newStatus,
+          completion_percentage: completionMap[newStatus] || 0,
+        }),
+      })
 
       const data = await res.json()
 
       if (res.ok) {
-        await Promise.all([
-          loadTasks(timelineId),
-          recalculateProgress(timelineId)
-        ])
+        await Promise.all([loadTasks(timelineId), recalculateProgress(timelineId)])
       } else {
-        setTasks(prev => ({ ...prev, [timelineId]: phaseTasks }))
+        setTasks((prev) => ({ ...prev, [timelineId]: phaseTasks }))
         setError(data.error || "Failed to update task status")
       }
     } catch (err) {
-      setTasks(prev => ({ ...prev, [timelineId]: phaseTasks }))
+      setTasks((prev) => ({ ...prev, [timelineId]: phaseTasks }))
       console.error("[v0] Update task status error:", err)
       setError("Failed to update task status")
     }
@@ -340,23 +324,17 @@ export default function ProjectPlannerClient({
     }
 
     try {
-      const ideaId = timelines.find(t => t.id === timelineId)?.idea_id
+      const ideaId = timelines.find((t) => t.id === timelineId)?.idea_id
       if (!ideaId) return
 
-      const res = await fetch(
-        `/api/business-plan/${ideaId}/timeline/${timelineId}/tasks`,
-        {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: taskId }),
-        }
-      )
+      const res = await fetch(`/api/business-plan/${ideaId}/timeline/${timelineId}/tasks`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: taskId }),
+      })
 
       if (res.ok) {
-        await Promise.all([
-          loadTasks(timelineId),
-          recalculateProgress(timelineId)
-        ])
+        await Promise.all([loadTasks(timelineId), recalculateProgress(timelineId)])
         setSuccess(true)
         setTimeout(() => setSuccess(false), 3000)
       } else {
@@ -376,17 +354,14 @@ export default function ProjectPlannerClient({
     setError("")
 
     try {
-      const ideaId = timelines.find(t => t.id === editingTaskTimelineId)?.idea_id
+      const ideaId = timelines.find((t) => t.id === editingTaskTimelineId)?.idea_id
       if (!ideaId) return
 
-      const res = await fetch(
-        `/api/business-plan/${ideaId}/timeline/${editingTaskTimelineId}/tasks`,
-        {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(editingTask),
-        }
-      )
+      const res = await fetch(`/api/business-plan/${ideaId}/timeline/${editingTaskTimelineId}/tasks`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editingTask),
+      })
 
       const data = await res.json()
 
@@ -395,10 +370,7 @@ export default function ProjectPlannerClient({
         return
       }
 
-      await Promise.all([
-        loadTasks(editingTaskTimelineId),
-        recalculateProgress(editingTaskTimelineId)
-      ])
+      await Promise.all([loadTasks(editingTaskTimelineId), recalculateProgress(editingTaskTimelineId)])
       setEditTaskOpen(false)
       setEditingTask(null)
       setEditingTaskTimelineId(null)
@@ -413,8 +385,8 @@ export default function ProjectPlannerClient({
   }
 
   const getFilteredTimelines = () => {
-    let filtered = [...timelines]
-    
+    const filtered = [...timelines]
+
     if (phaseFilter === "relevant") {
       const now = new Date()
       filtered.sort((a, b) => {
@@ -427,15 +399,15 @@ export default function ProjectPlannerClient({
     } else if (phaseFilter === "date-added") {
       filtered.sort((a, b) => b.id.localeCompare(a.id))
     }
-    
+
     return filtered
   }
 
   const getCalendarEvents = () => {
     const events: any[] = []
-    timelines.forEach(timeline => {
+    timelines.forEach((timeline) => {
       const phaseTasks = tasks[timeline.id] || []
-      phaseTasks.forEach(task => {
+      phaseTasks.forEach((task) => {
         if (task.due_date) {
           events.push({
             id: task.id,
@@ -450,12 +422,14 @@ export default function ProjectPlannerClient({
   }
 
   useEffect(() => {
-    timelines.forEach(timeline => loadTasks(timeline.id))
+    timelines.forEach((timeline) => loadTasks(timeline.id))
   }, [timelines.length])
 
   return (
     <div className="flex min-h-screen bg-background">
-      <aside className={`transition-all duration-300 border-r border-border bg-card p-4 flex-shrink-0 flex flex-col ${sidebarOpen ? 'w-64' : 'w-20'}`}>
+      <aside
+        className={`transition-all duration-300 border-r border-border bg-card p-4 flex-shrink-0 flex flex-col ${sidebarOpen ? "w-64" : "w-20"}`}
+      >
         <div className="flex items-center justify-between mb-6">
           {sidebarOpen && <h2 className="text-lg font-bold text-foreground">Project Tools</h2>}
           <button
@@ -463,7 +437,12 @@ export default function ProjectPlannerClient({
             onClick={() => setSidebarOpen(!sidebarOpen)}
             aria-label="Toggle sidebar"
           >
-            <svg className={`w-5 h-5 transition-transform duration-300 ${sidebarOpen ? 'rotate-0' : 'rotate-180'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              className={`w-5 h-5 transition-transform duration-300 ${sidebarOpen ? "rotate-0" : "rotate-180"}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
@@ -473,7 +452,7 @@ export default function ProjectPlannerClient({
             <Link
               key={tool.name}
               href={tool.href}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors ${!sidebarOpen && 'justify-center'}`}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors ${!sidebarOpen && "justify-center"}`}
               title={tool.name}
             >
               <tool.icon className="w-5 h-5 flex-shrink-0" />
@@ -623,7 +602,8 @@ export default function ProjectPlannerClient({
                           )}
                           {timeline.total_tasks && timeline.total_tasks > 0 && (
                             <p className="text-xs text-muted-foreground mt-1">
-                              Total tasks planned: {timeline.total_tasks} | Completed: {phaseTasks.filter(t => t.status === 'completed').length}
+                              Total tasks planned: {timeline.total_tasks} | Completed:{" "}
+                              {phaseTasks.filter((t) => t.status === "completed").length}
                             </p>
                           )}
                         </div>
@@ -658,18 +638,21 @@ export default function ProjectPlannerClient({
                       {phaseTasks.length > 0 && (
                         <div className="mt-4 space-y-2">
                           <h4 className="text-sm font-medium text-foreground">Tasks:</h4>
-                          {phaseTasks.map(task => {
+                          {phaseTasks.map((task) => {
                             const statusColors: Record<string, string> = {
-                              'completed': 'bg-green-500',
-                              'in_progress': 'bg-blue-500',
-                              'upcoming': 'bg-orange-500',
-                              'planned': 'bg-gray-400',
-                              'pending': 'bg-gray-400'
+                              completed: "bg-green-500",
+                              in_progress: "bg-blue-500",
+                              upcoming: "bg-orange-500",
+                              planned: "bg-gray-400",
+                              pending: "bg-gray-400",
                             }
-                            const statusColor = statusColors[task.status] || 'bg-gray-400'
-                            
+                            const statusColor = statusColors[task.status] || "bg-gray-400"
+
                             return (
-                              <div key={task.id} className="flex items-center justify-between p-3 bg-background rounded-lg border border-border">
+                              <div
+                                key={task.id}
+                                className="flex items-center justify-between p-3 bg-background rounded-lg border border-border"
+                              >
                                 <div className="flex items-center gap-3 flex-1">
                                   <div className={`w-2 h-2 rounded-full ${statusColor}`} />
                                   <div className="flex-1">
@@ -683,9 +666,7 @@ export default function ProjectPlannerClient({
                                   <span className="text-muted-foreground">
                                     Contributes: {task.contribution_percentage}%
                                   </span>
-                                  <span className="text-muted-foreground">
-                                    Done: {task.completion_percentage}%
-                                  </span>
+                                  <span className="text-muted-foreground">Done: {task.completion_percentage}%</span>
                                   <Select
                                     value={task.status}
                                     onValueChange={(value) => handleUpdateTaskStatus(timeline.id, task.id, value)}
@@ -748,17 +729,12 @@ export default function ProjectPlannerClient({
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Add New Phase</DialogTitle>
-            <DialogDescription>
-              Create a new phase for your project timeline
-            </DialogDescription>
+            <DialogDescription>Create a new phase for your project timeline</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium">Select Business Idea</label>
-              <Select
-                value={newPhase.idea_id}
-                onValueChange={(value) => setNewPhase({ ...newPhase, idea_id: value })}
-              >
+              <Select value={newPhase.idea_id} onValueChange={(value) => setNewPhase({ ...newPhase, idea_id: value })}>
                 <SelectTrigger className="mt-2">
                   <SelectValue placeholder="Choose an idea" />
                 </SelectTrigger>
@@ -787,7 +763,7 @@ export default function ProjectPlannerClient({
                   type="number"
                   min="0"
                   value={newPhase.total_tasks}
-                  onChange={(e) => setNewPhase({ ...newPhase, total_tasks: parseInt(e.target.value) || 0 })}
+                  onChange={(e) => setNewPhase({ ...newPhase, total_tasks: Number.parseInt(e.target.value) || 0 })}
                   placeholder="e.g., 10"
                   className="mt-2"
                 />
@@ -829,7 +805,14 @@ export default function ProjectPlannerClient({
               Cancel
             </Button>
             <Button onClick={handleAddPhase} disabled={saving}>
-              {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Adding...</> : "Add Phase"}
+              {saving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Adding...
+                </>
+              ) : (
+                "Add Phase"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -839,9 +822,7 @@ export default function ProjectPlannerClient({
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Add New Task</DialogTitle>
-            <DialogDescription>
-              Create a task and specify its contribution to the phase
-            </DialogDescription>
+            <DialogDescription>Create a task and specify its contribution to the phase</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -864,9 +845,7 @@ export default function ProjectPlannerClient({
               />
             </div>
             <div>
-              <label className="text-sm font-medium">
-                Contribution to Phase: {newTask.contribution_percentage}%
-              </label>
+              <label className="text-sm font-medium">Contribution to Phase: {newTask.contribution_percentage}%</label>
               <p className="text-xs text-muted-foreground mb-2">
                 What percentage of the phase does this task represent?
               </p>
@@ -879,7 +858,7 @@ export default function ProjectPlannerClient({
                 onChange={(e) =>
                   setNewTask({
                     ...newTask,
-                    contribution_percentage: parseInt(e.target.value),
+                    contribution_percentage: Number.parseInt(e.target.value),
                   })
                 }
                 className="mt-2"
@@ -888,10 +867,7 @@ export default function ProjectPlannerClient({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium">Priority</label>
-                <Select
-                  value={newTask.priority}
-                  onValueChange={(value) => setNewTask({ ...newTask, priority: value })}
-                >
+                <Select value={newTask.priority} onValueChange={(value) => setNewTask({ ...newTask, priority: value })}>
                   <SelectTrigger className="mt-2">
                     <SelectValue />
                   </SelectTrigger>
@@ -919,7 +895,14 @@ export default function ProjectPlannerClient({
               Cancel
             </Button>
             <Button onClick={handleAddTask} disabled={saving}>
-              {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Adding...</> : "Add Task"}
+              {saving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Adding...
+                </>
+              ) : (
+                "Add Task"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -929,9 +912,7 @@ export default function ProjectPlannerClient({
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Edit Task</DialogTitle>
-            <DialogDescription>
-              Update task details and contribution percentage
-            </DialogDescription>
+            <DialogDescription>Update task details and contribution percentage</DialogDescription>
           </DialogHeader>
           {editingTask && (
             <div className="space-y-4">
@@ -970,7 +951,7 @@ export default function ProjectPlannerClient({
                   onChange={(e) =>
                     setEditingTask({
                       ...editingTask,
-                      contribution_percentage: parseInt(e.target.value),
+                      contribution_percentage: Number.parseInt(e.target.value),
                     })
                   }
                   className="mt-2"
@@ -1011,19 +992,24 @@ export default function ProjectPlannerClient({
               Cancel
             </Button>
             <Button onClick={handleEditTask} disabled={saving}>
-              {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving...</> : "Save Changes"}
+              {saving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Changes"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={calendarOpen} onOpenChange={setCalendarOpen}>
-        <DialogContent className="max-w-3xl max-h-[80vh]">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Project Timeline Calendar</DialogTitle>
-            <DialogDescription>
-              View tasks and deadlines across all project phases
-            </DialogDescription>
+            <DialogDescription>View tasks and deadlines across all project phases</DialogDescription>
           </DialogHeader>
           <CalendarWithEvents events={getCalendarEvents()} />
         </DialogContent>

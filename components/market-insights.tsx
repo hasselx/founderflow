@@ -4,8 +4,9 @@ import { useEffect, useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Loader2, TrendingUp, ExternalLink } from 'lucide-react'
+import { Loader2, TrendingUp, ExternalLink } from "lucide-react"
 import { getSupabaseClient } from "@/lib/supabase/client"
+import { BusinessQuotesCarousel } from "./business-quotes-carousel"
 
 interface Trend {
   title: string
@@ -51,7 +52,7 @@ export default function MarketInsights({ domains }: { domains?: string[] }) {
 
     fetchDomains()
     const interval = setInterval(fetchDomains, 3000)
-    
+
     return () => clearInterval(interval)
   }, [])
 
@@ -165,6 +166,8 @@ export default function MarketInsights({ domains }: { domains?: string[] }) {
           )}
         </Card>
       )}
+
+      <BusinessQuotesCarousel />
     </div>
   )
 }
