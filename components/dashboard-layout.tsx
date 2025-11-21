@@ -3,10 +3,11 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import { useRouter } from 'next/navigation'
-import { Calendar, CheckSquare, Users, BarChart3, Bell, Zap, LogOut } from 'lucide-react'
+import { useRouter } from "next/navigation"
+import { Calendar, CheckSquare, Users, BarChart3, Bell, Zap, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getSupabaseClient } from "@/lib/supabase/client"
+import { FeedbackSheet } from "@/components/feedback-sheet"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,6 +28,7 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
   const [userEmail, setUserEmail] = useState("")
   const [userInitial, setUserInitial] = useState("U")
   const [loading, setLoading] = useState(true)
+  const [isAdmin, setIsAdmin] = useState(false) // New state to track if user is admin
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -44,7 +46,7 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
 
         const { data: userData } = await supabase
           .from("users")
-          .select("full_name, email")
+          .select("full_name, email, is_admin")
           .eq("id", authUser.id)
           .single()
 
@@ -52,6 +54,7 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
           setUserName(userData.full_name || "User")
           setUserEmail(userData.email || authUser.email || "")
           setUserInitial((userData.full_name || "U").charAt(0).toUpperCase())
+          setIsAdmin(userData.is_admin || false) // Set admin status
         } else {
           setUserEmail(authUser.email || "")
           setUserInitial((authUser.email?.charAt(0) || "U").toUpperCase())
@@ -140,6 +143,20 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
             </div>
 
             <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  const feedbackElement = document.querySelector("[data-feedback-trigger]")
+                  if (feedbackElement instanceof HTMLElement) {
+                    feedbackElement.click()
+                  }
+                }}
+                className="gap-2"
+              >
+                Send Feedback
+              </Button>
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-2 hover:opacity-80 transition-opacity">
@@ -157,6 +174,7 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => router.push("/profile")}>Profile Settings</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => router.push("/preferences")}>Preferences</DropdownMenuItem>
+                  {isAdmin && <DropdownMenuItem onClick={() => router.push("/admin")}>Admin Panel</DropdownMenuItem>}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="text-destructive cursor-pointer">
                     <LogOut className="w-4 h-4 mr-2" />
@@ -164,6 +182,10 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+
+              <div className="hidden">
+                <FeedbackSheet triggerClass="hidden" dataAttribute="data-feedback-trigger" />
+              </div>
             </div>
           </div>
         </div>

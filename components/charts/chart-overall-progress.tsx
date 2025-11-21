@@ -1,8 +1,7 @@
 "use client"
 
-import { useMemo } from "react"
-import { Label, PolarRadiusAxis, RadialBar, RadialBarChart } from "recharts"
-import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
+import { Label, Pie, PieChart } from "recharts"
+import { type ChartConfig, ChartContainer } from "@/components/ui/chart"
 
 interface ChartOverallProgressProps {
   total: number
@@ -32,34 +31,39 @@ const chartConfig = {
 } satisfies ChartConfig
 
 export function ChartOverallProgress({ total, completed, inProgress, upcoming, planned }: ChartOverallProgressProps) {
-  const chartData = useMemo(() => {
-    if (total === 0) return [{ completed: 0, inProgress: 0, upcoming: 0, planned: 0 }]
-
-    return [
-      {
-        completed: (completed / total) * 100,
-        inProgress: (inProgress / total) * 100,
-        upcoming: (upcoming / total) * 100,
-        planned: (planned / total) * 100,
-      },
-    ]
-  }, [total, completed, inProgress, upcoming, planned])
+  const chartData = [
+    { status: "completed", value: completed, fill: "var(--color-completed)" },
+    { status: "inProgress", value: inProgress, fill: "var(--color-inProgress)" },
+    { status: "upcoming", value: upcoming, fill: "var(--color-upcoming)" },
+    { status: "planned", value: planned, fill: "var(--color-planned)" },
+  ]
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <ChartContainer config={chartConfig} className="w-full max-w-[240px] aspect-square">
-        <RadialBarChart data={chartData} endAngle={180} innerRadius={70} outerRadius={120}>
-          <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
-          <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
+      <ChartContainer config={chartConfig} className="mx-auto w-full h-[200px]">
+        <PieChart>
+          <Pie
+            data={chartData}
+            dataKey="value"
+            nameKey="status"
+            cx="50%"
+            cy="70%"
+            startAngle={180}
+            endAngle={0}
+            innerRadius={60}
+            outerRadius={90}
+            paddingAngle={0}
+            strokeWidth={0}
+          >
             <Label
               content={({ viewBox }) => {
                 if (viewBox && "cx" in viewBox && "cy" in viewBox) {
                   return (
-                    <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle">
-                      <tspan x={viewBox.cx} y={(viewBox.cy || 0) - 12} className="fill-foreground text-3xl font-bold">
+                    <text x={viewBox.cx} y={(viewBox.cy || 0) + 20} textAnchor="middle">
+                      <tspan x={viewBox.cx} y={(viewBox.cy || 0) + 20} className="fill-foreground text-3xl font-bold">
                         {total}
                       </tspan>
-                      <tspan x={viewBox.cx} y={(viewBox.cy || 0) + 8} className="fill-muted-foreground text-sm">
+                      <tspan x={viewBox.cx} y={(viewBox.cy || 0) + 45} className="fill-muted-foreground text-sm">
                         Total Tasks
                       </tspan>
                     </text>
@@ -67,36 +71,8 @@ export function ChartOverallProgress({ total, completed, inProgress, upcoming, p
                 }
               }}
             />
-          </PolarRadiusAxis>
-          <RadialBar
-            dataKey="completed"
-            stackId="a"
-            fill="var(--color-completed)"
-            cornerRadius={8}
-            className="stroke-transparent"
-          />
-          <RadialBar
-            dataKey="inProgress"
-            stackId="a"
-            fill="var(--color-inProgress)"
-            cornerRadius={8}
-            className="stroke-transparent"
-          />
-          <RadialBar
-            dataKey="upcoming"
-            stackId="a"
-            fill="var(--color-upcoming)"
-            cornerRadius={8}
-            className="stroke-transparent"
-          />
-          <RadialBar
-            dataKey="planned"
-            stackId="a"
-            fill="var(--color-planned)"
-            cornerRadius={8}
-            className="stroke-transparent"
-          />
-        </RadialBarChart>
+          </Pie>
+        </PieChart>
       </ChartContainer>
     </div>
   )

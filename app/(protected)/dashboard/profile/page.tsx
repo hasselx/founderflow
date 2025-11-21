@@ -1,13 +1,16 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
 import { getSupabaseClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import Link from "next/link"
-import { ArrowLeft, Upload } from 'lucide-react'
+import { ArrowLeft, Upload } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { FeedbackSheet } from "@/components/feedback-sheet"
 
 export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
@@ -69,31 +72,31 @@ export default function ProfilePage() {
         return
       }
 
-      if (!file.type.startsWith('image/')) {
+      if (!file.type.startsWith("image/")) {
         setMessage("Please upload an image file")
         setUploading(false)
         return
       }
 
       const supabase = getSupabaseClient()
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
       if (!user) {
         setMessage("User not authenticated")
         setUploading(false)
         return
       }
 
-      const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+      const fileExt = file.name.split(".").pop()?.toLowerCase() || "jpg"
       const fileName = `${user.id}-avatar-${Date.now()}.${fileExt}`
       const filePath = `avatars/${fileName}`
 
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file, { upsert: true })
+      const { error: uploadError } = await supabase.storage.from("avatars").upload(filePath, file, { upsert: true })
 
       if (uploadError) {
         console.error("[v0] Upload error:", uploadError)
-        if (uploadError.message.includes('not found')) {
+        if (uploadError.message.includes("not found")) {
           setMessage("Avatar storage not configured. Please contact support.")
         } else {
           setMessage(`Upload error: ${uploadError.message}`)
@@ -101,14 +104,11 @@ export default function ProfilePage() {
         return
       }
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath)
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("avatars").getPublicUrl(filePath)
 
-      const { error: updateError } = await supabase
-        .from("users")
-        .update({ avatar_url: publicUrl })
-        .eq("id", user.id)
+      const { error: updateError } = await supabase.from("users").update({ avatar_url: publicUrl }).eq("id", user.id)
 
       if (updateError) {
         console.error("[v0] Update error:", updateError)
@@ -192,12 +192,7 @@ export default function ProfilePage() {
                 </AvatarFallback>
               </Avatar>
               <label className="relative">
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={uploading}
-                  className="gap-2"
-                >
+                <Button type="button" variant="outline" disabled={uploading} className="gap-2 bg-transparent">
                   <Upload className="w-4 h-4" />
                   {uploading ? "Uploading..." : "Upload Avatar"}
                 </Button>
@@ -233,7 +228,6 @@ export default function ProfilePage() {
             />
           </div>
 
-          {/* Email Section (Read-only) */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Email</label>
             <Input type="email" value={profile.email} disabled className="bg-muted" />
@@ -274,6 +268,14 @@ export default function ProfilePage() {
               {saving ? "Saving..." : "Save Changes"}
             </Button>
           </div>
+        </div>
+
+        <div className="bg-card border border-border rounded-lg p-6 mt-6">
+          <h2 className="text-lg font-semibold text-foreground mb-2">Feedback & Support</h2>
+          <p className="text-muted-foreground mb-4">
+            Have suggestions or found a bug? Let us know! Your feedback helps us improve the platform.
+          </p>
+          <FeedbackSheet />
         </div>
       </div>
     </div>
