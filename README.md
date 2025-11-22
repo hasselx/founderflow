@@ -1,30 +1,15 @@
 # Startup Business Plan
-
-*Automatically synced with your [v0.app](https://v0.app) deployments*
-
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/hasselxgaming-gmailcoms-projects/v0-startup-business-plan)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.app-black?style=for-the-badge)](https://v0.app/chat/gw4NjECjQYw)
-
+***Turn Your Startup Idea Into Reality***
 ## Overview
+<img width="1896" height="805" alt="image" src="https://github.com/user-attachments/assets/bc58e031-d364-4223-9ae9-942cd1075acf" />
+<img width="1894" height="821" alt="image" src="https://github.com/user-attachments/assets/3507f5b7-2d72-4b4a-a0b1-5ca59e6b542f" />
+<img width="1899" height="818" alt="image" src="https://github.com/user-attachments/assets/3e20c908-ad16-417c-9235-a79b03ebc8fd" />
 
-This repository will stay in sync with your deployed chats on [v0.app](https://v0.app).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.app](https://v0.app).
+<img width="1277" height="730" alt="image" src="https://github.com/user-attachments/assets/c764b1aa-8522-4c1e-a51e-ef82f232056c" />
+<img width="1904" height="713" alt="image" src="https://github.com/user-attachments/assets/d3b33b56-8e70-4f46-b96a-791dbf56d9ff" />
+
 
 ## Deployment
+**[https://teamfounderflow.vercel.app]**
 
-Your project is live at:
 
-**[https://vercel.com/hasselxgaming-gmailcoms-projects/v0-startup-business-plan](https://vercel.com/hasselxgaming-gmailcoms-projects/v0-startup-business-plan)**
-
-## Build your app
-
-Continue building your app on:
-
-**[https://v0.app/chat/gw4NjECjQYw](https://v0.app/chat/gw4NjECjQYw)**
-
-## How It Works
-
-1. Create and modify your project using [v0.app](https://v0.app)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
