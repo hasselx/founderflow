@@ -6,6 +6,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { CheckCircle2, Lightbulb, Users, TrendingUp, AlertCircle } from "lucide-react"
+import { completeProfile } from "@/app/actions/complete-profile"
 
 type UserRole = "creator" | "community_member" | "investor"
 
@@ -79,24 +80,18 @@ export default function RoleSelectPage() {
     setLoading(true)
 
     try {
-      const response = await fetch("/api/auth/complete-profile", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role: selectedRole, domains: selectedDomains }),
-      })
+      console.log("[v0] Calling completeProfile server action...")
+      const result = await completeProfile(selectedRole, selectedDomains)
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        setError(data.error || "Profile setup failed")
-        console.error("[v0] Profile completion failed:", data)
+      if (!result.success) {
+        setError(result.error || "Profile setup failed")
+        console.error("[v0] Profile completion failed:", result.error)
         setLoading(false)
         return
       }
 
-      setTimeout(() => {
-        router.push("/dashboard")
-      }, 500)
+      console.log("[v0] Profile completed successfully, redirecting...")
+      router.push("/dashboard")
     } catch (err) {
       setError("An error occurred. Please try again.")
       console.error("[v0] Profile submission error:", err)
