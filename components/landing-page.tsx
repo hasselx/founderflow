@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { ArrowRight, Zap, Users, TrendingUp, CheckCircle } from 'lucide-react'
+import { ArrowRight, Zap, Users, TrendingUp, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useEffect, useState } from "react"
 import { getSupabaseClient } from "@/lib/supabase/client"
@@ -18,6 +18,12 @@ export default function LandingPage() {
     const fetchStats = async () => {
       try {
         const supabase = getSupabaseClient()
+
+        if (!supabase) {
+          console.log("[v0] Supabase client not available, skipping stats fetch")
+          setLoading(false)
+          return
+        }
 
         // Fetch real stats from database
         const { data: startupData } = await supabase.from("startup_ideas").select("id", { count: "exact", head: true })

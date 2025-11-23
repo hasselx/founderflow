@@ -83,6 +83,7 @@ export default function ProjectPlannerClient({
   const [timelines, setTimelines] = useState<Timeline[]>(initialTimelines)
   const [addPhaseOpen, setAddPhaseOpen] = useState(false)
 
+  // The local state should be the source of truth after deletion, not the server props
   useEffect(() => {
     console.log("[v0] Props changed, syncing to state. New count:", initialTimelines.length)
     setTimelines(initialTimelines)
@@ -542,44 +543,19 @@ export default function ProjectPlannerClient({
 
   // ADDED: handleDeletePhase function to delete timeline phases
   const handleDeletePhase = async (timelineId: string) => {
-    console.log("[v0] Delete phase clicked, timelineId:", timelineId)
     if (!confirm("Are you sure you want to delete this phase? This action cannot be undone.")) {
       return
     }
 
     try {
       const ideaId = timelines.find((t) => t.id === timelineId)?.idea_id
-      console.log("[v0] Deleting phase, idea_id:", ideaId, "timelineId:", timelineId)
 
       const response = await fetch(`/api/business-plan/${ideaId}/timeline?phaseId=${timelineId}`, {
         method: "DELETE",
       })
 
-      console.log("[v0] Delete response status:", response.status)
-
       if (response.ok) {
-        const data = await response.json()
-        console.log("[v0] Delete successful:", data)
-
-        console.log(
-          "[v0] State update - before filter:",
-          timelines.length,
-          timelines.map((t) => t.id),
-        )
-
-        setTimelines((prev) => {
-          const filtered = prev.filter((t) => t.id !== timelineId)
-          console.log(
-            "[v0] State update - after filter:",
-            filtered.length,
-            filtered.map((t) => t.id),
-          )
-          return filtered
-        })
-
-        console.log("[v0] State update called successfully")
-
-        router.refresh()
+        setTimelines((prev) => prev.filter((t) => t.id !== timelineId))
 
         setToast({ message: "Phase deleted successfully!", type: "success" })
       } else {
