@@ -14,7 +14,7 @@ const quotes: Quote[] = [
     author: "Mukesh Ambani",
   },
   {
-    text: "5T Framework for Business Success:\n\n1. TAM (Total Addressable Market) – Most important factor in the success of a business.\n\n2. Team – Very important as you can't do everything yourself.\n\n3. Timing – Very important as it can help you get started.\n\n4. Traction – Month on month growth.\n\n5. Technology – Every business has to use technology to grow their business.",
+    text: "Business success rests on the 5Ts: TAM sets the potential, Team drives the mission, Timing ignites the start, Traction fuels the growth, and Technology powers the future.",
     author: "Anupam Mittal",
   },
   {
@@ -37,15 +37,15 @@ const quotes: Quote[] = [
 
 export function BusinessQuotesCarousel() {
   return (
-    <div className="w-full space-y-3">
-      <h3 className="text-lg font-semibold text-foreground">Business Insights & Wisdom</h3>
+    <div className="w-full space-y-2">
+      <h3 className="text-base font-semibold text-foreground">Business Insights & Wisdom</h3>
       <Carousel opts={{ loop: true }} className="w-full px-12">
         <CarouselContent>
           {quotes.map((quote, index) => (
             <CarouselItem key={index} className="basis-full">
-              <Card className="p-6 h-full flex flex-col justify-between bg-muted/50 hover:bg-muted/70 transition-colors min-h-[300px]">
-                <blockquote className="space-y-3">
-                  <p className="text-sm italic text-foreground whitespace-pre-line">{quote.text}</p>
+              <Card className="p-4 h-full flex flex-col justify-between bg-muted/50 hover:bg-muted/70 transition-colors min-h-[200px]">
+                <blockquote className="space-y-2">
+                  <p className="text-xs italic text-foreground whitespace-pre-line">{quote.text}</p>
                   <cite className="text-xs text-muted-foreground font-medium not-italic">— {quote.author}</cite>
                 </blockquote>
               </Card>
