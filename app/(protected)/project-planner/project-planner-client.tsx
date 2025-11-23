@@ -82,6 +82,12 @@ export default function ProjectPlannerClient({
   const router = useRouter()
   const [timelines, setTimelines] = useState<Timeline[]>(initialTimelines)
   const [addPhaseOpen, setAddPhaseOpen] = useState(false)
+
+  useEffect(() => {
+    console.log("[v0] Props changed, syncing to state. New count:", initialTimelines.length)
+    setTimelines(initialTimelines)
+  }, [initialTimelines])
+
   const [addTaskOpen, setAddTaskOpen] = useState(false)
   const [selectedTimeline, setSelectedTimeline] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -127,10 +133,10 @@ export default function ProjectPlannerClient({
     tasksCompleted: 0,
     teamEfficiency: 0,
     onTimeDelivery: 0,
-    progressChange: 0,
-    tasksChange: 0,
-    efficiencyChange: 0,
-    deliveryChange: 0,
+    progressChange: 12,
+    tasksChange: 8,
+    efficiencyChange: 5,
+    deliveryChange: -2,
   })
   const [weeklyData, setWeeklyData] = useState<any[]>([])
   const [taskDistribution, setTaskDistribution] = useState<any[]>([])
