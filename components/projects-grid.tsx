@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { getSupabaseClient } from "@/lib/supabase/client"
-import { Loader2, Upload } from 'lucide-react'
+import { Loader2, Upload } from "lucide-react"
 import Link from "next/link"
 
 interface Project {
@@ -104,24 +104,6 @@ export default function ProjectsGrid() {
     setUploadingImageFor(projectId)
     try {
       const supabase = getSupabaseClient()
-
-      try {
-        await fetch("/api/storage/create-bucket", { method: "POST" })
-      } catch (error) {
-        console.error("[v0] Error creating bucket via API:", error)
-      }
-
-      // Check if bucket exists
-      const { data: buckets } = await supabase.storage.listBuckets()
-      const bucketExists = buckets?.some((b) => b.name === "project-images")
-
-      if (!bucketExists) {
-        alert(
-          "Storage bucket 'project-images' is not configured. Please contact your administrator to set up Supabase Storage.",
-        )
-        setUploadingImageFor(null)
-        return
-      }
 
       const fileName = `${projectId}/${Date.now()}.${file.name.split(".").pop()}`
 
