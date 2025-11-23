@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import LandingPage from "@/components/landing-page"
-import { getSupabaseClient } from "@/lib/supabase/client"
 
 export default function HomePage() {
   const router = useRouter()
@@ -12,7 +11,15 @@ export default function HomePage() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        const { getSupabaseClient } = await import("@/lib/supabase/client")
         const supabase = getSupabaseClient()
+
+        if (!supabase) {
+          console.warn("[v0] Supabase client not available, showing landing page")
+          setIsChecking(false)
+          return
+        }
+
         const {
           data: { user },
         } = await supabase.auth.getUser()
@@ -21,7 +28,7 @@ export default function HomePage() {
           router.push("/dashboard")
         }
       } catch (error) {
-        console.error("[v0] Auth check error:", error)
+        console.warn("[v0] Auth check unavailable, showing landing page:", error)
       } finally {
         setIsChecking(false)
       }

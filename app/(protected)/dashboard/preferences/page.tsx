@@ -1,11 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { getSupabaseClient } from "@/lib/supabase/client"
 import Link from "next/link"
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 const AVAILABLE_DOMAINS = [
   "Technology",
@@ -27,40 +27,43 @@ export default function PreferencesPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState("")
+  const router = useRouter()
+
+  const fetchUserDomains = async () => {
+    try {
+      const supabase = getSupabaseClient()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      if (user) {
+        const { data } = await supabase.from("user_domains").select("domain").eq("user_id", user.id)
+
+        if (data) {
+          setSelectedDomains(data.map((d) => d.domain))
+          console.log(
+            "[v0] Loaded domains:",
+            data.map((d) => d.domain),
+          )
+        }
+      }
+    } catch (error) {
+      console.error("[v0] Error fetching domains:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const fetchUserDomains = async () => {
-      try {
-        const supabase = getSupabaseClient()
-        const {
-          data: { user },
-        } = await supabase.auth.getUser()
-
-        if (user) {
-          const { data } = await supabase.from("user_domains").select("domain").eq("user_id", user.id)
-
-          if (data) {
-            setSelectedDomains(data.map((d) => d.domain))
-            console.log("[v0] Loaded domains:", data.map((d) => d.domain))
-          }
-        }
-      } catch (error) {
-        console.error("[v0] Error fetching domains:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
     fetchUserDomains()
   }, [])
 
   const handleDomainToggle = async (domain: string) => {
     const isSelected = selectedDomains.includes(domain)
-    const updated = isSelected
-      ? selectedDomains.filter((d) => d !== domain)
-      : [...selectedDomains, domain]
-    
-    console.log("[v0] Toggling domain:", domain, "selected:", isSelected, "new list:", updated)
+    const updated = isSelected ? selectedDomains.filter((d) => d !== domain) : [...selectedDomains, domain]
+
+    console.log("[v0] Toggling domain:", domain, "isSelected:", isSelected, "updated list:", updated)
+
     setSelectedDomains(updated)
     await handleSavePreferences(updated)
   }
@@ -79,14 +82,13 @@ export default function PreferencesPage() {
 
       console.log("[v0] Saving preferences for user:", user.id, "domains:", domains)
 
-      // Delete existing domains
       const { error: deleteError } = await supabase.from("user_domains").delete().eq("user_id", user.id)
-      
+
       if (deleteError) {
-        console.error("[v0] Error deleting old domains:", deleteError)
+        console.error("[v0] Error deleting domains:", deleteError)
+        throw deleteError
       }
 
-      // Insert new domains
       if (domains.length > 0) {
         const { error: insertError } = await supabase.from("user_domains").insert(
           domains.map((domain) => ({
@@ -101,12 +103,22 @@ export default function PreferencesPage() {
         }
       }
 
-      console.log("[v0] Preferences saved successfully:", domains)
+      console.log("[v0] Preferences saved successfully, refetching domains...")
+
+      await fetchUserDomains()
+
+      router.refresh()
+
       setMessage("Preferences updated!")
-      setTimeout(() => setMessage(""), 2000)
+
+      setTimeout(() => {
+        setMessage("")
+      }, 3000)
     } catch (error) {
       console.error("[v0] Error saving preferences:", error)
       setMessage("Error saving preferences. Please try again.")
+
+      await fetchUserDomains()
     } finally {
       setSaving(false)
     }
@@ -130,7 +142,7 @@ export default function PreferencesPage() {
           <ArrowLeft className="w-4 h-4" />
           Back to Dashboard
         </Link>
-        
+
         <h1 className="text-3xl font-bold text-foreground mb-2">Preferences</h1>
         <p className="text-muted-foreground mb-8">Select the industries and topics you're interested in</p>
 
@@ -149,7 +161,7 @@ export default function PreferencesPage() {
                 >
                   <Checkbox
                     checked={selectedDomains.includes(domain)}
-                    onCheckedChange={(checked) => handleDomainToggle(domain)}
+                    onCheckedChange={() => handleDomainToggle(domain)}
                     disabled={saving}
                   />
                   <span className="text-foreground font-medium">{domain}</span>

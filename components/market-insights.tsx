@@ -5,7 +5,6 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Loader2, TrendingUp, ExternalLink } from "lucide-react"
-import { getSupabaseClient } from "@/lib/supabase/client"
 import { BusinessQuotesCarousel } from "./business-quotes-carousel"
 
 interface Trend {
@@ -31,30 +30,36 @@ export default function MarketInsights({ domains }: { domains?: string[] }) {
   useEffect(() => {
     const fetchDomains = async () => {
       try {
-        const supabase = getSupabaseClient()
-        const {
-          data: { user },
-        } = await supabase.auth.getUser()
+        const response = await fetch("/api/user/domains")
+        if (!response.ok) {
+          throw new Error("Failed to fetch domains")
+        }
+        const data = await response.json()
+        const uniqueDomains = data.domains || []
 
-        if (!user) return
+        console.log("[v0] Market Insights fetched domains:", uniqueDomains)
 
-        const { data } = await supabase.from("user_domains").select("domain").eq("user_id", user.id)
-
-        const uniqueDomains = Array.from(new Set(data?.map((d) => d.domain) || []))
         setAllDomains(uniqueDomains)
-        if (uniqueDomains.length > 0 && !selectedDomain) {
-          setSelectedDomain(uniqueDomains[0])
+
+        if (uniqueDomains.length > 0) {
+          if (!selectedDomain || !uniqueDomains.includes(selectedDomain)) {
+            console.log("[v0] Switching to domain:", uniqueDomains[0])
+            setSelectedDomain(uniqueDomains[0])
+          }
+        } else {
+          setSelectedDomain("")
         }
       } catch (error) {
-        console.error("[v0] Error fetching domains:", error)
+        console.error("[v0] Error fetching user domains:", error)
+        setAllDomains([])
       }
     }
 
     fetchDomains()
-    const interval = setInterval(fetchDomains, 3000)
+    const interval = setInterval(fetchDomains, 1500)
 
     return () => clearInterval(interval)
-  }, [])
+  }, [selectedDomain])
 
   useEffect(() => {
     if (selectedDomain) {
@@ -73,7 +78,6 @@ export default function MarketInsights({ domains }: { domains?: string[] }) {
 
       const data = await response.json()
 
-      // Map API response to component format
       const trends =
         data.trends?.map((trend: any) => ({
           title: trend.title,

@@ -1,13 +1,10 @@
-import { NextResponse, NextRequest } from "next/server"
+import { NextResponse, type NextRequest } from "next/server"
 import { getSupabaseServerClient } from "@/lib/supabase/server"
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string; timelineId: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string; timelineId: string }> }) {
   try {
     const { timelineId } = await params
-    
+
     if (!timelineId) {
       return NextResponse.json({ error: "Timeline ID required" }, { status: 400 })
     }
@@ -29,19 +26,16 @@ export async function GET(
   } catch (error) {
     console.error("[v0] Get tasks error:", error)
     return NextResponse.json(
-      { 
+      {
         error: error instanceof Error ? error.message : "Failed to fetch tasks",
-        details: process.env.NODE_ENV === "development" ? String(error) : undefined
+        details: process.env.NODE_ENV === "development" ? String(error) : undefined,
       },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string; timelineId: string }> }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string; timelineId: string }> }) {
   try {
     const { id: businessPlanId, timelineId } = await params
     const body = await request.json()
@@ -82,15 +76,12 @@ export async function POST(
     console.error("[v0] Create task error:", error)
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to create task" },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string; timelineId: string }> }
-) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string; timelineId: string }> }) {
   try {
     const { timelineId } = await params
     const body = await request.json()
@@ -102,11 +93,11 @@ export async function PUT(
 
     const validStatuses = ["planned", "upcoming", "in_progress", "completed"]
     let normalizedStatus = body.status?.toLowerCase() || "planned"
-    
+
     if (normalizedStatus === "in-progress") {
       normalizedStatus = "in_progress"
     }
-    
+
     if (!validStatuses.includes(normalizedStatus)) {
       normalizedStatus = "planned"
     }
@@ -149,19 +140,19 @@ export async function PUT(
     console.error("[v0] Update task error:", error)
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to update task" },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string; timelineId: string }> }
+  { params }: { params: Promise<{ id: string; timelineId: string }> },
 ) {
   try {
     const { timelineId } = await params
-    const { searchParams } = new URL(request.url)
-    const taskId = searchParams.get("taskId")
+    const body = await request.json()
+    const taskId = body.id
 
     if (!taskId) {
       return NextResponse.json({ error: "Task ID required" }, { status: 400 })
@@ -169,10 +160,7 @@ export async function DELETE(
 
     const supabase = await getSupabaseServerClient()
 
-    const { error } = await supabase
-      .from("project_tasks")
-      .delete()
-      .eq("id", taskId)
+    const { error } = await supabase.from("project_tasks").delete().eq("id", taskId)
 
     if (error) throw error
 
@@ -184,7 +172,7 @@ export async function DELETE(
     console.error("[v0] Delete task error:", error)
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to delete task" },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }
@@ -198,13 +186,10 @@ async function updatePhaseProgress(supabase: any, timelineId: string) {
 
   if (tasks && tasks.length > 0) {
     const avgProgress = Math.round(
-      tasks.reduce((sum: number, task: any) => sum + task.completion_percentage, 0) / tasks.length
+      tasks.reduce((sum: number, task: any) => sum + task.completion_percentage, 0) / tasks.length,
     )
 
-    await supabase
-      .from("project_timelines")
-      .update({ progress_percentage: avgProgress })
-      .eq("id", timelineId)
+    await supabase.from("project_timelines").update({ progress_percentage: avgProgress }).eq("id", timelineId)
   }
 }
 
