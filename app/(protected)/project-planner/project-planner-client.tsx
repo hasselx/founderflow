@@ -43,6 +43,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Toggle } from "@/components/ui/toggle"
 import { getSupabaseClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { useRouter } from "next/navigation"
 
 interface Timeline {
   id: string
@@ -78,6 +79,7 @@ export default function ProjectPlannerClient({
   timelines: Timeline[]
   ideas: Idea[]
 }) {
+  const router = useRouter()
   const [timelines, setTimelines] = useState<Timeline[]>(initialTimelines)
   const [addPhaseOpen, setAddPhaseOpen] = useState(false)
   const [addTaskOpen, setAddTaskOpen] = useState(false)
@@ -153,6 +155,7 @@ export default function ProjectPlannerClient({
   const [notificationTasks, setNotificationTasks] = useState<any[]>([])
   const [overdueTasks, setOverdueTasks] = useState<any[]>([])
   const [upcomingTasks, setUpcomingTasks] = useState<any[]>([])
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null) // Added for toast messages
 
   const totalTasks = useMemo(() => {
     return timelines.flatMap((t) => tasks[t.id] || []).length
@@ -534,43 +537,51 @@ export default function ProjectPlannerClient({
   // ADDED: handleDeletePhase function to delete timeline phases
   const handleDeletePhase = async (timelineId: string) => {
     console.log("[v0] Delete phase clicked, timelineId:", timelineId)
-
-    if (!confirm("Are you sure you want to delete this phase? All associated tasks will be deleted.")) {
-      console.log("[v0] Delete cancelled by user")
+    if (!confirm("Are you sure you want to delete this phase? This action cannot be undone.")) {
       return
     }
 
     try {
-      const timeline = timelines.find((t) => t.id === timelineId)
-      if (!timeline) {
-        console.log("[v0] Timeline not found:", timelineId)
-        return
-      }
+      const ideaId = timelines.find((t) => t.id === timelineId)?.idea_id
+      console.log("[v0] Deleting phase, idea_id:", ideaId, "timelineId:", timelineId)
 
-      console.log("[v0] Deleting phase, idea_id:", timeline.idea_id, "timelineId:", timelineId)
-
-      const res = await fetch(`/api/business-plan/${timeline.idea_id}/timeline?phaseId=${timelineId}`, {
+      const response = await fetch(`/api/business-plan/${ideaId}/timeline?phaseId=${timelineId}`, {
         method: "DELETE",
       })
 
-      console.log("[v0] Delete response status:", res.status)
+      console.log("[v0] Delete response status:", response.status)
 
-      if (!res.ok) {
-        const data = await res.json()
-        console.error("[v0] Delete failed:", data)
-        setError(data.error || "Failed to delete phase")
-        return
+      if (response.ok) {
+        const data = await response.json()
+        console.log("[v0] Delete successful:", data)
+
+        console.log(
+          "[v0] State update - before filter:",
+          timelines.length,
+          timelines.map((t) => t.id),
+        )
+
+        setTimelines((prev) => {
+          const filtered = prev.filter((t) => t.id !== timelineId)
+          console.log(
+            "[v0] State update - after filter:",
+            filtered.length,
+            filtered.map((t) => t.id),
+          )
+          return filtered
+        })
+
+        console.log("[v0] State update called successfully")
+
+        router.refresh()
+
+        setToast({ message: "Phase deleted successfully!", type: "success" })
+      } else {
+        throw new Error("Failed to delete phase")
       }
-
-      const responseData = await res.json()
-      console.log("[v0] Delete successful:", responseData)
-
-      setTimelines((prev) => prev.filter((t) => t.id !== timelineId))
-      setSuccess(true)
-      setTimeout(() => setSuccess(false), 3000)
-    } catch (err) {
-      console.error("[v0] Delete phase error:", err)
-      setError("Failed to delete phase")
+    } catch (error) {
+      console.error("[v0] Error deleting phase:", error)
+      setToast({ message: "Failed to delete phase. Please try again.", type: "error" })
     }
   }
 
@@ -957,6 +968,19 @@ export default function ProjectPlannerClient({
           {success && (
             <div className="mb-6 p-4 rounded-lg bg-green-500/10 border border-green-500/20 text-green-600 text-sm">
               Changes saved successfully!
+            </div>
+          )}
+
+          {/* Toast message display */}
+          {toast && (
+            <div
+              className={`mb-6 p-4 rounded-lg text-sm ${
+                toast.type === "success"
+                  ? "bg-green-500/10 border border-green-500/20 text-green-600"
+                  : "bg-destructive/10 border border-destructive/20 text-destructive"
+              }`}
+            >
+              {toast.message}
             </div>
           )}
 
