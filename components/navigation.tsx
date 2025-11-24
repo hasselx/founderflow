@@ -1,6 +1,6 @@
 "use client"
 
-import { BarChart3, Lightbulb, LogOut, Calendar, ChevronDown, Settings, HelpCircle } from "lucide-react"
+import { BarChart3, Lightbulb, LogOut, Calendar, ChevronDown, Settings, HelpCircle, Menu, X } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 
@@ -11,6 +11,7 @@ interface NavigationProps {
 export default function Navigation({ user }: NavigationProps) {
   const router = useRouter()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   const navItems = [
     { id: "dashboard", label: "Dashboard", icon: BarChart3, href: "/dashboard" },
@@ -23,6 +24,7 @@ export default function Navigation({ user }: NavigationProps) {
       const response = await fetch("/api/auth/logout", { method: "POST" })
       if (response.ok) {
         setIsDropdownOpen(false)
+        setIsMobileMenuOpen(false)
         router.push("/")
         router.refresh()
       } else {
@@ -35,6 +37,7 @@ export default function Navigation({ user }: NavigationProps) {
 
   const handleNavigation = (href: string) => {
     setIsDropdownOpen(false)
+    setIsMobileMenuOpen(false)
     router.push(href)
   }
 
@@ -54,7 +57,7 @@ export default function Navigation({ user }: NavigationProps) {
               <span className="text-xl font-bold text-foreground">FounderFlow</span>
             </div>
 
-            {/* Nav Items */}
+            {/* Nav Items - Desktop Only */}
             <div className="hidden md:flex items-center gap-1">
               {navItems.map((item) => {
                 const Icon = item.icon
@@ -71,58 +74,91 @@ export default function Navigation({ user }: NavigationProps) {
               })}
             </div>
 
-            <div className="relative">
+            <div className="flex items-center gap-2">
               <button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent hover:bg-accent/90 text-primary-foreground transition-colors"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="md:hidden p-2 rounded-md hover:bg-muted transition-colors"
+                aria-label="Toggle mobile menu"
               >
-                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-sm font-bold">
-                  {user.name.charAt(0).toUpperCase()}
-                </div>
-                <span className="text-sm font-medium">{user.name}</span>
-                <ChevronDown className="w-4 h-4" />
+                {isMobileMenuOpen ? (
+                  <X className="w-5 h-5 text-foreground" />
+                ) : (
+                  <Menu className="w-5 h-5 text-foreground" />
+                )}
               </button>
 
-              {/* Dropdown Menu */}
-              {isDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-64 bg-card border border-border rounded-lg shadow-lg py-2 z-50">
-                  {/* User Info */}
-                  <div className="px-4 py-3 border-b border-border">
-                    <p className="font-semibold text-foreground">{user.name}</p>
-                    <p className="text-sm text-muted-foreground">{user.email}</p>
+              {/* User Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent hover:bg-accent/90 text-primary-foreground transition-colors"
+                >
+                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-sm font-bold">
+                    {user.name.charAt(0).toUpperCase()}
                   </div>
+                  <span className="text-sm font-medium hidden sm:inline">{user.name}</span>
+                  <ChevronDown className="w-4 h-4" />
+                </button>
 
-                  {/* Menu Items */}
-                  <button
-                    onClick={() => handleNavigation("/dashboard")}
-                    className="w-full text-left px-4 py-2 flex items-center gap-2 hover:bg-muted transition-colors text-foreground"
-                  >
-                    <Settings className="w-4 h-4" />
-                    <span className="text-sm">Settings</span>
-                  </button>
+                {/* Dropdown Menu */}
+                {isDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-64 bg-card border border-border rounded-lg shadow-lg py-2 z-50">
+                    {/* User Info */}
+                    <div className="px-4 py-3 border-b border-border">
+                      <p className="font-semibold text-foreground">{user.name}</p>
+                      <p className="text-sm text-muted-foreground">{user.email}</p>
+                    </div>
 
-                  <button
-                    onClick={() => handleNavigation("/dashboard")}
-                    className="w-full text-left px-4 py-2 flex items-center gap-2 hover:bg-muted transition-colors text-foreground"
-                  >
-                    <HelpCircle className="w-4 h-4" />
-                    <span className="text-sm">Help & Support</span>
-                  </button>
-
-                  {/* Logout Button */}
-                  <div className="border-t border-border pt-2 mt-2">
+                    {/* Menu Items */}
                     <button
-                      onClick={handleLogout}
-                      className="w-full text-left px-4 py-2 flex items-center gap-2 hover:bg-destructive/10 text-destructive transition-colors"
+                      onClick={() => handleNavigation("/dashboard")}
+                      className="w-full text-left px-4 py-2 flex items-center gap-2 hover:bg-muted transition-colors text-foreground"
                     >
-                      <LogOut className="w-4 h-4" />
-                      <span className="text-sm font-medium">Sign Out</span>
+                      <Settings className="w-4 h-4" />
+                      <span className="text-sm">Settings</span>
                     </button>
+
+                    <button
+                      onClick={() => handleNavigation("/dashboard")}
+                      className="w-full text-left px-4 py-2 flex items-center gap-2 hover:bg-muted transition-colors text-foreground"
+                    >
+                      <HelpCircle className="w-4 h-4" />
+                      <span className="text-sm">Help & Support</span>
+                    </button>
+
+                    {/* Logout Button */}
+                    <div className="border-t border-border pt-2 mt-2">
+                      <button
+                        onClick={handleLogout}
+                        className="w-full text-left px-4 py-2 flex items-center gap-2 hover:bg-destructive/10 text-destructive transition-colors"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        <span className="text-sm font-medium">Sign Out</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
+
+          {isMobileMenuOpen && (
+            <div className="md:hidden border-t border-border py-2 bg-card">
+              {navItems.map((item) => {
+                const Icon = item.icon
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => handleNavigation(item.href)}
+                    className="w-full text-left px-4 py-3 flex items-center gap-3 text-sm font-medium rounded-md transition-colors text-muted-foreground hover:text-foreground hover:bg-muted"
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span>{item.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          )}
         </div>
       </nav>
 

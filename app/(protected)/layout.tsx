@@ -3,7 +3,7 @@
 import React from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { usePathname } from 'next/navigation'
+import { usePathname } from "next/navigation"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import LogoutButton from "@/components/logout-button"
+import { ThemeToggleDropdown } from "@/components/theme-toggle-dropdown"
 
 interface ProtectedLayoutProps {
   children: React.ReactNode
@@ -121,6 +122,11 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
                   <DropdownMenuItem asChild>
                     <Link href="/dashboard/preferences">Preferences</Link>
                   </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <div className="px-2 py-1.5">
+                    <p className="text-xs text-muted-foreground mb-2">Theme</p>
+                    <ThemeToggleDropdown />
+                  </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <LogoutButton />

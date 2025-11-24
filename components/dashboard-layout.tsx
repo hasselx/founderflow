@@ -8,6 +8,7 @@ import { Calendar, CheckSquare, Users, BarChart3, Bell, Zap, LogOut } from "luci
 import { Button } from "@/components/ui/button"
 import { getSupabaseClient } from "@/lib/supabase/client"
 import { FeedbackSheet } from "@/components/feedback-sheet"
+import { ThemeToggleDropdown } from "@/components/theme-toggle-dropdown" // New import
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -175,6 +176,11 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
                   <DropdownMenuItem onClick={() => router.push("/profile")}>Profile Settings</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => router.push("/preferences")}>Preferences</DropdownMenuItem>
                   {isAdmin && <DropdownMenuItem onClick={() => router.push("/admin")}>Admin Panel</DropdownMenuItem>}
+                  <DropdownMenuSeparator />
+                  <div className="px-2 py-1.5">
+                    <p className="text-xs text-muted-foreground mb-2">Theme</p>
+                    <ThemeToggleDropdown />
+                  </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="text-destructive cursor-pointer">
                     <LogOut className="w-4 h-4 mr-2" />

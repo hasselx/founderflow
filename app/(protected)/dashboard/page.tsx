@@ -3,6 +3,7 @@ import StatsCard from "@/components/stats-card"
 import QuickStart from "@/components/quick-start"
 import ProjectsGrid from "@/components/projects-grid"
 import MarketInsights from "@/components/market-insights"
+import { AnimatedWelcome } from "@/components/animated-welcome"
 import { getSupabaseServerClient } from "@/lib/supabase/server"
 
 export const dynamic = "force-dynamic"
@@ -70,15 +71,11 @@ export default async function DashboardPage() {
     const insightsTrend = marketInsights > 0 ? `+${marketInsights} vs last month` : "+0 vs last month"
 
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Welcome Section */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-2">Welcome back, {userName}!</h1>
-          <p className="text-muted-foreground">Here's what's happening with your startup journey today.</p>
-        </div>
+      <div className="w-full px-3 sm:px-4 md:px-6 lg:px-8 py-6 sm:py-8">
+        <AnimatedWelcome userName={userName} speed={1.2} />
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
           <StatsCard
             title="Total Projects"
             value={stats.totalProjects.toString()}
@@ -109,15 +106,17 @@ export default async function DashboardPage() {
           />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
+          <div className="lg:col-span-2 space-y-6 sm:space-y-8">
             <QuickStart />
             <ProjectsGrid />
           </div>
 
           {/* Right Sidebar - Only Quick Start & Market Insights */}
-          <div className="space-y-6">{userDomains.length > 0 && <MarketInsights domains={userDomains} />}</div>
+          <div className="space-y-6 sm:space-y-8">
+            {userDomains.length > 0 && <MarketInsights domains={userDomains} />}
+          </div>
         </div>
       </div>
     )
