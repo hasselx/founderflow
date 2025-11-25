@@ -1,10 +1,35 @@
 "use client"
 
 import Link from "next/link"
-import { ArrowRight, Zap, Users, TrendingUp, CheckCircle } from "lucide-react"
+import {
+  ArrowRight,
+  Zap,
+  Users,
+  TrendingUp,
+  Lightbulb,
+  Target,
+  BarChart3,
+  Rocket,
+  FileText,
+  MessageSquare,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useEffect, useState } from "react"
 import { getSupabaseClient } from "@/lib/supabase/client"
+import { TypewriterEffect } from "@/components/ui/typewriter-effect"
+import { Marquee, MarqueeContent, MarqueeFade, MarqueeItem } from "@/components/ui/marquee"
+
+const features = [
+  { name: "AI Idea Validation", icon: Lightbulb },
+  { name: "Market Research", icon: BarChart3 },
+  { name: "Competitor Analysis", icon: Target },
+  { name: "Business Planning", icon: FileText },
+  { name: "Project Roadmaps", icon: Rocket },
+  { name: "Co-founder Matching", icon: Users },
+  { name: "Pitch Deck Builder", icon: Zap },
+  { name: "Community Support", icon: MessageSquare },
+  { name: "Funding Tracker", icon: TrendingUp },
+]
 
 export default function LandingPage() {
   const [stats, setStats] = useState({
@@ -13,6 +38,15 @@ export default function LandingPage() {
     funding: 0,
   })
   const [loading, setLoading] = useState(true)
+
+  const words = [
+    { text: "Turn" },
+    { text: "Your" },
+    { text: "Startup" },
+    { text: "Idea" },
+    { text: "Into" },
+    { text: "Reality", className: "text-primary dark:text-primary" },
+  ]
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -25,7 +59,6 @@ export default function LandingPage() {
           return
         }
 
-        // Fetch real stats from database
         const { data: startupData } = await supabase.from("startup_ideas").select("id", { count: "exact", head: true })
 
         const { data: discussionData } = await supabase.from("discussions").select("id", { count: "exact", head: true })
@@ -89,11 +122,13 @@ export default function LandingPage() {
       <section className="relative mx-auto max-w-7xl px-4 py-12 sm:py-16 md:py-20 lg:py-24 sm:px-6 lg:px-8">
         <div className="space-y-6 sm:space-y-8 text-center">
           <div className="space-y-3 sm:space-y-4">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight text-foreground">
-              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                Turn Your Startup Idea Into Reality
-              </span>
-            </h1>
+            <div className="flex justify-center">
+              <TypewriterEffect
+                words={words}
+                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl"
+                cursorClassName="bg-primary"
+              />
+            </div>
             <p className="mx-auto max-w-2xl text-sm sm:text-base md:text-lg lg:text-xl text-muted-foreground">
               AI-powered validation, market research, and planning tools for founders. Connect with co-founders,
               investors, and community members who believe in your vision.
@@ -136,6 +171,29 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Marquee Section */}
+      <section className="py-8 sm:py-12 border-y border-border/40 bg-card/30">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <p className="text-center text-xs sm:text-sm text-muted-foreground mb-6">
+            Everything you need to launch your startup
+          </p>
+          <Marquee>
+            <MarqueeFade side="left" />
+            <MarqueeContent speed={30}>
+              {features.map((feature, index) => (
+                <MarqueeItem key={index} className="flex items-center gap-3 px-8">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                    <feature.icon className="h-5 w-5 text-primary" />
+                  </div>
+                  <span className="text-sm font-medium text-foreground whitespace-nowrap">{feature.name}</span>
+                </MarqueeItem>
+              ))}
+            </MarqueeContent>
+            <MarqueeFade side="right" />
+          </Marquee>
+        </div>
+      </section>
+
       {/* Features Section */}
       <section id="features" className="mx-auto max-w-7xl px-4 py-16 sm:py-20 lg:py-24 sm:px-6 lg:px-8">
         <div className="space-y-12 sm:space-y-16">
@@ -150,7 +208,7 @@ export default function LandingPage() {
             {/* Feature 1 */}
             <div className="space-y-4 rounded-lg border border-border p-6 bg-card hover:shadow-lg transition-shadow">
               <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-                <Zap className="h-6 w-6 text-primary" />
+                <Lightbulb className="h-6 w-6 text-primary" />
               </div>
               <h3 className="text-xl font-bold">AI-Powered Validation</h3>
               <p className="text-muted-foreground">
@@ -161,40 +219,69 @@ export default function LandingPage() {
             {/* Feature 2 */}
             <div className="space-y-4 rounded-lg border border-border p-6 bg-card hover:shadow-lg transition-shadow">
               <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-accent/10">
-                <Users className="h-6 w-6 text-accent" />
+                <BarChart3 className="h-6 w-6 text-accent" />
               </div>
-              <h3 className="text-xl font-bold">Find Your Co-founder</h3>
+              <h3 className="text-xl font-bold">Market Research</h3>
               <p className="text-muted-foreground">
-                Connect with complementary founders through our AI-powered matching system.
+                Access real-time market trends, funding data, and competitive landscape analysis.
               </p>
             </div>
 
             {/* Feature 3 */}
             <div className="space-y-4 rounded-lg border border-border p-6 bg-card hover:shadow-lg transition-shadow">
               <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-                <TrendingUp className="h-6 w-6 text-primary" />
+                <Target className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="text-xl font-bold">Market Intelligence</h3>
-              <p className="text-muted-foreground">
-                Access real-time market trends, funding data, and competitive landscape analysis.
-              </p>
+              <h3 className="text-xl font-bold">Competitor Analysis</h3>
+              <p className="text-muted-foreground">Understand your competition and gain a strategic advantage.</p>
             </div>
 
             {/* Feature 4 */}
             <div className="space-y-4 rounded-lg border border-border p-6 bg-card hover:shadow-lg transition-shadow">
               <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-accent/10">
-                <CheckCircle className="h-6 w-6 text-accent" />
+                <FileText className="h-6 w-6 text-accent" />
               </div>
-              <h3 className="text-xl font-bold">Project Planning</h3>
-              <p className="text-muted-foreground">
-                AI-generated roadmaps with timelines, milestones, and resource planning.
-              </p>
+              <h3 className="text-xl font-bold">Business Planning</h3>
+              <p className="text-muted-foreground">Create comprehensive business plans with AI-driven insights.</p>
             </div>
 
             {/* Feature 5 */}
             <div className="space-y-4 rounded-lg border border-border p-6 bg-card hover:shadow-lg transition-shadow">
               <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-                <Users className="h-6 w-6 text-primary" />
+                <Rocket className="h-6 w-6 text-primary" />
+              </div>
+              <h3 className="text-xl font-bold">Project Roadmaps</h3>
+              <p className="text-muted-foreground">
+                AI-generated roadmaps with timelines, milestones, and resource planning.
+              </p>
+            </div>
+
+            {/* Feature 6 */}
+            <div className="space-y-4 rounded-lg border border-border p-6 bg-card hover:shadow-lg transition-shadow">
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-accent/10">
+                <Users className="h-6 w-6 text-accent" />
+              </div>
+              <h3 className="text-xl font-bold">Co-founder Matching</h3>
+              <p className="text-muted-foreground">
+                Connect with complementary founders through our AI-powered matching system.
+              </p>
+            </div>
+
+            {/* Feature 7 */}
+            <div className="space-y-4 rounded-lg border border-border p-6 bg-card hover:shadow-lg transition-shadow">
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+                <Zap className="h-6 w-6 text-primary" />
+              </div>
+              <h3 className="text-xl font-bold">Pitch Deck Builder</h3>
+              <p className="text-muted-foreground">
+                Create professional pitch decks and portfolios to showcase your startup.
+              </p>
+            </div>
+
+            {/* Feature 8 */}
+            <div className="space-y-4 rounded-lg border border-border p-6 bg-card hover:shadow-lg transition-shadow">
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-accent/10">
+                <MessageSquare className="h-6 w-6 text-accent" />
               </div>
               <h3 className="text-xl font-bold">Community Support</h3>
               <p className="text-muted-foreground">
@@ -202,15 +289,13 @@ export default function LandingPage() {
               </p>
             </div>
 
-            {/* Feature 6 */}
+            {/* Feature 9 */}
             <div className="space-y-4 rounded-lg border border-border p-6 bg-card hover:shadow-lg transition-shadow">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-accent/10">
-                <Zap className="h-6 w-6 text-accent" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+                <TrendingUp className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="text-xl font-bold">Investor Pitch Deck</h3>
-              <p className="text-muted-foreground">
-                Create professional pitch decks and portfolios to showcase your startup.
-              </p>
+              <h3 className="text-xl font-bold">Funding Tracker</h3>
+              <p className="text-muted-foreground">Monitor and track your funding progress with ease.</p>
             </div>
           </div>
         </div>
