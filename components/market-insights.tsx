@@ -56,7 +56,7 @@ export default function MarketInsights({ domains }: { domains?: string[] }) {
     }
 
     fetchDomains()
-    const interval = setInterval(fetchDomains, 1500)
+    const interval = setInterval(fetchDomains, 30000)
 
     return () => clearInterval(interval)
   }, [selectedDomain])

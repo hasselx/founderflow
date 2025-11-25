@@ -1,8 +1,9 @@
 "use client"
 
-import { BarChart3, Lightbulb, LogOut, Calendar, ChevronDown, Settings, HelpCircle, Menu, X } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { Home, Lightbulb, LogOut, TrendingUp, ChevronDown, Settings, HelpCircle, Menu, X, BookOpen } from "lucide-react"
+import { useRouter, usePathname } from "next/navigation"
 import { useState } from "react"
+import Dock from "@/components/ui/dock"
 
 interface NavigationProps {
   user: { name: string; email: string }
@@ -10,14 +11,23 @@ interface NavigationProps {
 
 export default function Navigation({ user }: NavigationProps) {
   const router = useRouter()
+  const pathname = usePathname()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   const navItems = [
-    { id: "dashboard", label: "Dashboard", icon: BarChart3, href: "/dashboard" },
-    { id: "business-plan", label: "Business Plan", icon: Lightbulb, href: "/dashboard" },
-    { id: "planner", label: "Project Planner", icon: Calendar, href: "/dashboard" },
+    { id: "dashboard", label: "Dashboard", icon: Home, href: "/dashboard" },
+    { id: "business-plan", label: "Business Plan", icon: Lightbulb, href: "/business-plan" },
+    { id: "planner", label: "Project Planner", icon: TrendingUp, href: "/project-planner" },
+    { id: "knowledge-base", label: "Knowledge Base", icon: BookOpen, href: "/knowledge-base" },
   ]
+
+  const dockItems = navItems.map((item) => ({
+    icon: <item.icon className="w-6 h-6" />,
+    label: item.label,
+    onClick: () => handleNavigation(item.href),
+    isActive: pathname === item.href,
+  }))
 
   const handleLogout = async () => {
     try {
@@ -27,8 +37,6 @@ export default function Navigation({ user }: NavigationProps) {
         setIsMobileMenuOpen(false)
         router.push("/")
         router.refresh()
-      } else {
-        console.error("[v0] Logout failed with status:", response.status)
       }
     } catch (error) {
       console.error("[v0] Logout error:", error)
@@ -57,21 +65,8 @@ export default function Navigation({ user }: NavigationProps) {
               <span className="text-xl font-bold text-foreground">FounderFlow</span>
             </div>
 
-            {/* Nav Items - Desktop Only */}
-            <div className="hidden md:flex items-center gap-1">
-              {navItems.map((item) => {
-                const Icon = item.icon
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => handleNavigation(item.href)}
-                    className="px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 text-muted-foreground hover:text-foreground hover:bg-muted"
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span>{item.label}</span>
-                  </button>
-                )
-              })}
+            <div className="hidden md:block">
+              <Dock items={dockItems} panelHeight={60} baseItemSize={48} magnification={72} />
             </div>
 
             <div className="flex items-center gap-2">
@@ -100,16 +95,13 @@ export default function Navigation({ user }: NavigationProps) {
                   <ChevronDown className="w-4 h-4" />
                 </button>
 
-                {/* Dropdown Menu */}
                 {isDropdownOpen && (
                   <div className="absolute right-0 mt-2 w-64 bg-card border border-border rounded-lg shadow-lg py-2 z-50">
-                    {/* User Info */}
                     <div className="px-4 py-3 border-b border-border">
                       <p className="font-semibold text-foreground">{user.name}</p>
                       <p className="text-sm text-muted-foreground">{user.email}</p>
                     </div>
 
-                    {/* Menu Items */}
                     <button
                       onClick={() => handleNavigation("/dashboard")}
                       className="w-full text-left px-4 py-2 flex items-center gap-2 hover:bg-muted transition-colors text-foreground"
@@ -126,7 +118,6 @@ export default function Navigation({ user }: NavigationProps) {
                       <span className="text-sm">Help & Support</span>
                     </button>
 
-                    {/* Logout Button */}
                     <div className="border-t border-border pt-2 mt-2">
                       <button
                         onClick={handleLogout}
@@ -162,7 +153,6 @@ export default function Navigation({ user }: NavigationProps) {
         </div>
       </nav>
 
-      {/* Spacer for fixed navbar */}
       <div className="h-20" />
     </>
   )

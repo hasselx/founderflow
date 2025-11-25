@@ -2,8 +2,8 @@
 
 import React from "react"
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
+import { Home, Lightbulb, TrendingUp, BookOpen, Menu, X } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import LogoutButton from "@/components/logout-button"
 import { ThemeToggleDropdown } from "@/components/theme-toggle-dropdown"
+import Dock from "@/components/ui/dock"
 
 interface ProtectedLayoutProps {
   children: React.ReactNode
@@ -21,10 +22,12 @@ interface ProtectedLayoutProps {
 
 export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
   const pathname = usePathname()
+  const router = useRouter()
 
   const [userName, setUserName] = React.useState("User")
   const [userEmail, setUserEmail] = React.useState("")
   const [userInitial, setUserInitial] = React.useState("U")
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false)
 
   React.useEffect(() => {
     const fetchUserData = async () => {
@@ -61,6 +64,20 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
     return false
   }
 
+  const navItems = [
+    { id: "dashboard", label: "Dashboard", icon: Home, href: "/dashboard" },
+    { id: "business-plan", label: "Business Plan", icon: Lightbulb, href: "/business-plan" },
+    { id: "planner", label: "Project Planner", icon: TrendingUp, href: "/project-planner" },
+    { id: "knowledge-base", label: "Knowledge Base", icon: BookOpen, href: "/knowledge-base" },
+  ]
+
+  const dockItems = navItems.map((item) => ({
+    icon: <item.icon className="w-6 h-6" />,
+    label: item.label,
+    onClick: () => router.push(item.href),
+    isActive: isActive(item.href),
+  }))
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header Navigation */}
@@ -75,32 +92,24 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
               <span className="text-xl font-bold text-foreground hidden sm:inline">FounderFlow</span>
             </Link>
 
-            {/* Nav Items */}
-            <div className="hidden md:flex items-center gap-1">
-              <Link href="/dashboard">
-                <Button variant={isActive("/dashboard") ? "default" : "ghost"} className="gap-2">
-                  Dashboard
-                </Button>
-              </Link>
-              <Link href="/business-plan">
-                <Button variant={isActive("/business-plan") ? "default" : "ghost"} className="gap-2">
-                  Business Plan
-                </Button>
-              </Link>
-              <Link href="/project-planner">
-                <Button variant={isActive("/project-planner") ? "default" : "ghost"} className="gap-2">
-                  Project Planner
-                </Button>
-              </Link>
-              <Link href="/knowledge-base">
-                <Button variant={isActive("/knowledge-base") ? "default" : "ghost"} className="gap-2">
-                  Knowledge Base
-                </Button>
-              </Link>
+            <div className="hidden md:flex items-center">
+              <Dock items={dockItems} panelHeight={60} baseItemSize={48} magnification={72} />
             </div>
 
             {/* User Menu */}
             <div className="flex items-center gap-4">
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="md:hidden p-2 rounded-md hover:bg-muted transition-colors"
+                aria-label="Toggle mobile menu"
+              >
+                {isMobileMenuOpen ? (
+                  <X className="w-5 h-5 text-foreground" />
+                ) : (
+                  <Menu className="w-5 h-5 text-foreground" />
+                )}
+              </button>
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-2 hover:opacity-80 transition-opacity">
@@ -135,6 +144,31 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
               </DropdownMenu>
             </div>
           </div>
+
+          {isMobileMenuOpen && (
+            <div className="md:hidden border-t border-border py-2 bg-card">
+              {navItems.map((item) => {
+                const Icon = item.icon
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      router.push(item.href)
+                      setIsMobileMenuOpen(false)
+                    }}
+                    className={`w-full text-left px-4 py-3 flex items-center gap-3 text-sm font-medium rounded-md transition-colors ${
+                      isActive(item.href)
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    }`}
+                  >
+                    <Icon className="w-5 h-5" />
+                    <span>{item.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          )}
         </div>
       </header>
 

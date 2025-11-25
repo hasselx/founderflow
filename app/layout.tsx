@@ -2,7 +2,6 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
-import { ThemeProvider } from "next-themes"
 import "./globals.css"
 
 const _geist = Geist({ subsets: ["latin"] })
@@ -25,39 +24,56 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" style={{ scrollBehavior: "smooth" }}>
+    <html lang="en" style={{ scrollBehavior: "smooth" }} suppressHydrationWarning>
       <head>
         <link rel="icon" href="/favicon.jpg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/apple-icon.png" />
         <meta name="theme-color" content="#1e3a8a" />
         <script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js" />
+        {/* Apply saved theme immediately to prevent flash */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var savedTheme = localStorage.getItem('founderflow-theme');
+                  var systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                  var theme = savedTheme || (systemDark ? 'dark' : 'light');
+                  if (theme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
       </head>
       <body className={`font-sans antialiased`}>
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-          {children}
-        </ThemeProvider>
+        {children}
         <Analytics />
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              const lenis = new Lenis({
-                duration: 1.2,
-                easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-                direction: 'vertical',
-                gestureDirection: 'vertical',
-                smooth: true,
-                mouseMultiplier: 1,
-                smoothTouch: false,
-                touchMultiplier: 2,
-                infinite: false,
-              })
+              try {
+                const lenis = new Lenis({
+                  duration: 1.2,
+                  easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+                  direction: 'vertical',
+                  gestureDirection: 'vertical',
+                  smooth: true,
+                  mouseMultiplier: 1,
+                  smoothTouch: false,
+                  touchMultiplier: 2,
+                  infinite: false,
+                })
 
-              function raf(time) {
-                lenis.raf(time)
+                function raf(time) {
+                  lenis.raf(time)
+                  requestAnimationFrame(raf)
+                }
+
                 requestAnimationFrame(raf)
-              }
-
-              requestAnimationFrame(raf)
+              } catch (e) {}
             `,
           }}
         />
