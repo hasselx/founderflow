@@ -10,6 +10,7 @@ import Link from "next/link"
 import { ArrowLeft, Upload, Camera } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { FeedbackSheet } from "@/components/feedback-sheet"
+import { useUser } from "@/lib/hooks/use-user"
 
 export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
@@ -24,6 +25,8 @@ export default function ProfilePage() {
     phone: "",
     avatar_url: "",
   })
+
+  const { mutate } = useUser()
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -126,6 +129,9 @@ export default function ProfilePage() {
       }
 
       setProfile({ ...profile, avatar_url: publicUrl })
+
+      mutate()
+
       setMessage("Avatar updated successfully!")
       setTimeout(() => setMessage(""), 3000)
     } catch (error) {
@@ -162,6 +168,8 @@ export default function ProfilePage() {
         .eq("id", user.id)
 
       if (error) throw error
+
+      mutate()
 
       setMessage("Profile updated successfully!")
       setTimeout(() => setMessage(""), 3000)

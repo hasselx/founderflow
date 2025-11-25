@@ -17,6 +17,7 @@ import LogoutButton from "@/components/logout-button"
 import { ThemeToggleDropdown } from "@/components/theme-toggle-dropdown"
 import Dock from "@/components/ui/dock"
 import { UserThemeProvider } from "@/components/user-theme-provider"
+import { useUser } from "@/lib/hooks/use-user"
 
 interface ProtectedLayoutProps {
   children: React.ReactNode
@@ -25,30 +26,14 @@ interface ProtectedLayoutProps {
 function ProtectedLayoutContent({ children }: ProtectedLayoutProps) {
   const pathname = usePathname()
   const router = useRouter()
-
-  const [userName, setUserName] = React.useState("User")
-  const [userEmail, setUserEmail] = React.useState("")
-  const [userInitial, setUserInitial] = React.useState("U")
-  const [userAvatar, setUserAvatar] = React.useState<string | null>(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false)
 
-  React.useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const response = await fetch("/api/auth/user")
-        const data = await response.json()
-        if (data.user) {
-          setUserName(data.user.full_name || "User")
-          setUserEmail(data.user.email || "")
-          setUserInitial((data.user.full_name || "U").charAt(0).toUpperCase())
-          setUserAvatar(data.user.avatar_url || null)
-        }
-      } catch (error) {
-        console.error("[v0] Error fetching user:", error)
-      }
-    }
-    fetchUserData()
-  }, [])
+  const { user, isLoading } = useUser()
+
+  const userName = user?.full_name || "User"
+  const userEmail = user?.email || ""
+  const userInitial = (user?.full_name || "U").charAt(0).toUpperCase()
+  const userAvatar = user?.avatar_url || null
 
   const isActive = (href: string) => {
     if (href === "/dashboard") {
@@ -117,7 +102,7 @@ function ProtectedLayoutContent({ children }: ProtectedLayoutProps) {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                    <Avatar className="w-10 h-10">
+                    <Avatar className="w-10 h-10" key={userAvatar}>
                       <AvatarImage src={userAvatar || undefined} alt={userName} />
                       <AvatarFallback className="bg-accent text-accent-foreground font-bold text-sm">
                         {userInitial}
