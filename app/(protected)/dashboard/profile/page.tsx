@@ -1,14 +1,13 @@
 "use client"
 
 import type React from "react"
-
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { getSupabaseClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import Link from "next/link"
-import { ArrowLeft, Upload } from "lucide-react"
+import { ArrowLeft, Upload, Camera } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { FeedbackSheet } from "@/components/feedback-sheet"
 
@@ -17,6 +16,7 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [message, setMessage] = useState("")
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [profile, setProfile] = useState({
     full_name: "",
     email: "",
@@ -37,7 +37,7 @@ export default function ProfilePage() {
 
         const { data: userData } = await supabase
           .from("users")
-          .select("full_name, email, role, avatar_url")
+          .select("full_name, email, role, avatar_url, phone")
           .eq("id", user.id)
           .single()
 
@@ -46,7 +46,7 @@ export default function ProfilePage() {
             full_name: userData.full_name || "",
             email: userData.email || user.email || "",
             role: userData.role || "",
-            phone: "",
+            phone: userData.phone || "",
             avatar_url: userData.avatar_url || "",
           })
         }
@@ -60,9 +60,14 @@ export default function ProfilePage() {
     fetchProfile()
   }, [])
 
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click()
+  }
+
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
       setUploading(true)
+      setMessage("")
       const file = e.target.files?.[0]
       if (!file) return
 
@@ -90,23 +95,27 @@ export default function ProfilePage() {
 
       const fileExt = file.name.split(".").pop()?.toLowerCase() || "jpg"
       const fileName = `${user.id}-avatar-${Date.now()}.${fileExt}`
-      const filePath = `avatars/${fileName}`
+      const filePath = `${fileName}`
 
-      const { error: uploadError } = await supabase.storage.from("avatars").upload(filePath, file, { upsert: true })
+      const { data: uploadData, error: uploadError } = await supabase.storage.from("avatars").upload(filePath, file, {
+        upsert: true,
+        cacheControl: "3600",
+      })
 
       if (uploadError) {
         console.error("[v0] Upload error:", uploadError)
-        if (uploadError.message.includes("not found")) {
-          setMessage("Avatar storage not configured. Please contact support.")
+        if (uploadError.message.includes("not found") || uploadError.message.includes("Bucket")) {
+          setMessage(
+            "Avatar storage bucket not configured. Please run the SQL script and create the 'avatars' bucket in Supabase Dashboard.",
+          )
         } else {
           setMessage(`Upload error: ${uploadError.message}`)
         }
         return
       }
 
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("avatars").getPublicUrl(filePath)
+      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath)
+      const publicUrl = urlData.publicUrl
 
       const { error: updateError } = await supabase.from("users").update({ avatar_url: publicUrl }).eq("id", user.id)
 
@@ -124,6 +133,10 @@ export default function ProfilePage() {
       setMessage("Error uploading avatar. Please try again.")
     } finally {
       setUploading(false)
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""
+      }
     }
   }
 
@@ -144,6 +157,7 @@ export default function ProfilePage() {
         .update({
           full_name: profile.full_name,
           role: profile.role,
+          phone: profile.phone,
         })
         .eq("id", user.id)
 
@@ -184,28 +198,50 @@ export default function ProfilePage() {
         <div className="bg-card border border-border rounded-lg p-6 space-y-6">
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-foreground">Profile Picture</h2>
-            <div className="flex items-end gap-4">
-              <Avatar className="w-24 h-24">
-                <AvatarImage src={profile.avatar_url || "/placeholder.svg"} alt={profile.full_name} />
-                <AvatarFallback className="bg-primary text-primary-foreground text-xl font-bold">
-                  {(profile.full_name || profile.email || "U").charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <label className="relative">
-                <Button type="button" variant="outline" disabled={uploading} className="gap-2 bg-transparent">
-                  <Upload className="w-4 h-4" />
-                  {uploading ? "Uploading..." : "Upload Avatar"}
-                </Button>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarUpload}
+            <div className="flex items-center gap-6">
+              <div className="relative group">
+                <Avatar className="w-24 h-24 cursor-pointer" onClick={handleAvatarClick}>
+                  <AvatarImage src={profile.avatar_url || "/placeholder.svg"} alt={profile.full_name} />
+                  <AvatarFallback className="bg-primary text-primary-foreground text-xl font-bold">
+                    {(profile.full_name || profile.email || "U").charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                {/* Hover overlay */}
+                <div
+                  onClick={handleAvatarClick}
+                  className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer flex items-center justify-center"
+                >
+                  <Camera className="w-6 h-6 text-white" />
+                </div>
+                {uploading && (
+                  <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center">
+                    <div className="w-6 h-6 rounded-full border-2 border-white border-t-transparent animate-spin"></div>
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-col gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
                   disabled={uploading}
-                  className="hidden"
-                />
-              </label>
+                  className="gap-2 bg-transparent"
+                  onClick={handleAvatarClick}
+                >
+                  <Upload className="w-4 h-4" />
+                  {uploading ? "Uploading..." : "Upload Photo"}
+                </Button>
+                <p className="text-xs text-muted-foreground">JPG, PNG or GIF (Max 5MB)</p>
+              </div>
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarUpload}
+                disabled={uploading}
+                className="hidden"
+              />
             </div>
-            <p className="text-xs text-muted-foreground">JPG, PNG or GIF (Max 5MB)</p>
           </div>
 
           <div className="space-y-2">
@@ -226,6 +262,7 @@ export default function ProfilePage() {
               value={profile.phone}
               onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
             />
+            <p className="text-xs text-muted-foreground">Optional - used for account recovery</p>
           </div>
 
           <div className="space-y-2">
@@ -241,10 +278,8 @@ export default function ProfilePage() {
                 <SelectValue placeholder="Select your role" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="founder">Founder</SelectItem>
-                <SelectItem value="co-founder">Co-Founder</SelectItem>
-                <SelectItem value="solo-entrepreneur">Solo Entrepreneur</SelectItem>
-                <SelectItem value="aspiring-founder">Aspiring Founder</SelectItem>
+                <SelectItem value="creator">Creator / Founder</SelectItem>
+                <SelectItem value="community_member">Community Member</SelectItem>
                 <SelectItem value="investor">Investor</SelectItem>
               </SelectContent>
             </Select>
@@ -255,7 +290,7 @@ export default function ProfilePage() {
             <div
               className={`p-4 rounded-lg text-sm ${
                 message.includes("successfully")
-                  ? "bg-green-500/10 text-green-700"
+                  ? "bg-green-500/10 text-green-700 dark:text-green-400"
                   : "bg-destructive/10 text-destructive"
               }`}
             >

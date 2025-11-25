@@ -15,12 +15,13 @@ import {
 import LogoutButton from "@/components/logout-button"
 import { ThemeToggleDropdown } from "@/components/theme-toggle-dropdown"
 import Dock from "@/components/ui/dock"
+import { UserThemeProvider } from "@/components/user-theme-provider"
 
 interface ProtectedLayoutProps {
   children: React.ReactNode
 }
 
-export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
+function ProtectedLayoutContent({ children }: ProtectedLayoutProps) {
   const pathname = usePathname()
   const router = useRouter()
 
@@ -175,5 +176,13 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
       {/* Main Content */}
       <main className="w-full overflow-y-auto">{children}</main>
     </div>
+  )
+}
+
+export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
+  return (
+    <UserThemeProvider>
+      <ProtectedLayoutContent>{children}</ProtectedLayoutContent>
+    </UserThemeProvider>
   )
 }
