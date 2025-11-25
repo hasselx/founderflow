@@ -18,3 +18,5 @@ export function getSupabaseClient() {
   }
   return supabaseInstance
 }
+
+export const createClient = getSupabaseClient

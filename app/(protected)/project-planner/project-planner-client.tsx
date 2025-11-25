@@ -19,6 +19,7 @@ import {
   Download,
   ArrowUpIcon,
   ArrowDownIcon,
+  Pin,
 } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -44,6 +45,7 @@ import { Toggle } from "@/components/ui/toggle"
 import { getSupabaseClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { useRouter } from "next/navigation"
+import { createClient } from "@/lib/supabase/client"
 
 interface Timeline {
   id: string
@@ -54,6 +56,7 @@ interface Timeline {
   start_date: string
   end_date: string
   total_tasks?: number
+  pinned?: boolean // Added pinned property
 }
 
 interface Idea {
@@ -573,6 +576,20 @@ export default function ProjectPlannerClient({
     setEditPhaseOpen(true)
   }
 
+  const handleTogglePin = async (timelineId: string, pinned: boolean) => {
+    const supabase = createClient()
+
+    const { error } = await supabase.from("project_timelines").update({ pinned }).eq("id", timelineId)
+
+    if (error) {
+      console.error("[v0] Error toggling pin:", error)
+      return
+    }
+
+    // Update local state
+    setTimelines((prev) => prev.map((t) => (t.id === timelineId ? { ...t, pinned } : t)))
+  }
+
   const handleAddTask = async () => {
     if (!selectedTimeline || !newTask.title) {
       setError("Please fill in the task title")
@@ -759,9 +776,18 @@ export default function ProjectPlannerClient({
   const getFilteredTimelines = () => {
     const filtered = [...timelines]
 
+    // Sort pinned items first
+    filtered.sort((a, b) => {
+      if (a.pinned && !b.pinned) return -1
+      if (!a.pinned && b.pinned) return 1
+      return 0
+    })
+
     if (phaseFilter === "relevant") {
       const now = new Date()
       filtered.sort((a, b) => {
+        // Keep pinned sort, then sort by relevance within each group
+        if (a.pinned !== b.pinned) return a.pinned ? -1 : 1
         const aDate = new Date(a.end_date)
         const bDate = new Date(b.end_date)
         const aDiff = Math.abs(aDate.getTime() - now.getTime())
@@ -769,7 +795,11 @@ export default function ProjectPlannerClient({
         return aDiff - bDiff
       })
     } else if (phaseFilter === "date-added") {
-      filtered.sort((a, b) => b.id.localeCompare(a.id))
+      filtered.sort((a, b) => {
+        // Keep pinned sort, then sort by date added within each group
+        if (a.pinned !== b.pinned) return a.pinned ? -1 : 1
+        return b.id.localeCompare(a.id)
+      })
     }
 
     return filtered
@@ -1067,7 +1097,10 @@ export default function ProjectPlannerClient({
                           <div className="absolute left-[-8px] top-6 w-4 h-4 rounded-full bg-primary border-4 border-background" />
                           <div className="flex items-start justify-between mb-3">
                             <div>
-                              <h3 className="text-lg font-semibold text-foreground">{timeline.phase_name}</h3>
+                              <div className="flex items-center gap-2">
+                                <h3 className="text-lg font-semibold text-foreground">{timeline.phase_name}</h3>
+                                {timeline.pinned && <Pin className="w-4 h-4 text-primary fill-primary" />}
+                              </div>
                               <p className="text-sm text-muted-foreground">{ideaTitle}</p>
                               {timeline.start_date && timeline.end_date && (
                                 <p className="text-xs text-muted-foreground mt-1">
@@ -1082,11 +1115,25 @@ export default function ProjectPlannerClient({
                                 </p>
                               )}
                             </div>
-                            {/* CHANGE: Added edit and delete buttons for the phase */}
                             <div className="flex items-center gap-2">
                               <span className="px-3 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary capitalize">
                                 {timeline.status}
                               </span>
+                              <button
+                                className={`p-2 hover:bg-muted rounded-lg transition-colors ${
+                                  timeline.pinned ? "bg-primary/10" : ""
+                                }`}
+                                onClick={() => handleTogglePin(timeline.id, !timeline.pinned)}
+                                title={timeline.pinned ? "Unpin phase" : "Pin phase"}
+                              >
+                                <Pin
+                                  className={`w-4 h-4 ${
+                                    timeline.pinned
+                                      ? "text-primary fill-primary"
+                                      : "text-muted-foreground hover:text-foreground"
+                                  }`}
+                                />
+                              </button>
                               <button
                                 className="p-2 hover:bg-muted rounded-lg transition-colors"
                                 onClick={() => handleEditPhase(timeline)}
