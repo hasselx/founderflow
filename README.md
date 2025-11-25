@@ -1,30 +1,22 @@
 # Startup Business Plan
-
-*Automatically synced with your [v0.app](https://v0.app) deployments*
-
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/hasselxgaming-gmailcoms-projects/v0-startup-business-plan)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.app-black?style=for-the-badge)](https://v0.app/chat/gw4NjECjQYw)
+**[https://teamfounderflow.vercel.app/]**
 
 ## Overview
+<img width="1902" height="872" alt="image" src="https://github.com/user-attachments/assets/e6dfbb09-5df2-4eef-a1a7-c576ac020b5b" />
 
-This repository will stay in sync with your deployed chats on [v0.app](https://v0.app).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.app](https://v0.app).
+<img width="1904" height="875" alt="image" src="https://github.com/user-attachments/assets/c9de523e-5ee9-4af2-98d8-79bd09003d04" />
+
+<img width="1904" height="878" alt="image" src="https://github.com/user-attachments/assets/c603dda8-79ec-48fc-9a2b-852179a27b70" />
+
+<img width="1899" height="868" alt="image" src="https://github.com/user-attachments/assets/fb217ede-0985-41ed-886c-c7383aa5d8c2" />
+
+<img width="1899" height="859" alt="image" src="https://github.com/user-attachments/assets/984ceccc-8361-4cca-903c-56cedeeb049e" />
+
+
+<img width="1897" height="884" alt="image" src="https://github.com/user-attachments/assets/4d25ada0-2b4d-44ab-9ef8-b9a5169bf762" />
+
+<img width="1896" height="862" alt="image" src="https://github.com/user-attachments/assets/8cca0fb8-f103-4d65-b032-d886526465e9" />
 
 ## Deployment
 
-Your project is live at:
 
-**[https://vercel.com/hasselxgaming-gmailcoms-projects/v0-startup-business-plan](https://vercel.com/hasselxgaming-gmailcoms-projects/v0-startup-business-plan)**
-
-## Build your app
-
-Continue building your app on:
-
-**[https://v0.app/chat/gw4NjECjQYw](https://v0.app/chat/gw4NjECjQYw)**
-
-## How It Works
-
-1. Create and modify your project using [v0.app](https://v0.app)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
