@@ -12,6 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import LogoutButton from "@/components/logout-button"
 import { ThemeToggleDropdown } from "@/components/theme-toggle-dropdown"
 import Dock from "@/components/ui/dock"
@@ -28,6 +29,7 @@ function ProtectedLayoutContent({ children }: ProtectedLayoutProps) {
   const [userName, setUserName] = React.useState("User")
   const [userEmail, setUserEmail] = React.useState("")
   const [userInitial, setUserInitial] = React.useState("U")
+  const [userAvatar, setUserAvatar] = React.useState<string | null>(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false)
 
   React.useEffect(() => {
@@ -39,6 +41,7 @@ function ProtectedLayoutContent({ children }: ProtectedLayoutProps) {
           setUserName(data.user.full_name || "User")
           setUserEmail(data.user.email || "")
           setUserInitial((data.user.full_name || "U").charAt(0).toUpperCase())
+          setUserAvatar(data.user.avatar_url || null)
         }
       } catch (error) {
         console.error("[v0] Error fetching user:", error)
@@ -114,9 +117,12 @@ function ProtectedLayoutContent({ children }: ProtectedLayoutProps) {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                    <div className="w-10 h-10 rounded-full bg-accent text-accent-foreground flex items-center justify-center font-bold text-sm">
-                      {userInitial}
-                    </div>
+                    <Avatar className="w-10 h-10">
+                      <AvatarImage src={userAvatar || undefined} alt={userName} />
+                      <AvatarFallback className="bg-accent text-accent-foreground font-bold text-sm">
+                        {userInitial}
+                      </AvatarFallback>
+                    </Avatar>
                     <span className="hidden sm:inline text-sm font-medium text-foreground">{userName}</span>
                   </button>
                 </DropdownMenuTrigger>
