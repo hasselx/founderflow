@@ -10,7 +10,6 @@ import {
   Loader2,
   Pencil,
   Trash2,
-  Plus,
   Eye,
   AlertCircle,
   TrendingUp,
@@ -20,6 +19,11 @@ import {
   ArrowUpIcon,
   ArrowDownIcon,
   Pin,
+  Share2,
+  UserPlus,
+  Mail,
+  X,
+  Send,
 } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -46,6 +50,8 @@ import { getSupabaseClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
+// Added Sheet imports
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet"
 
 interface Timeline {
   id: string
@@ -166,6 +172,25 @@ export default function ProjectPlannerClient({
   const [overdueTasks, setOverdueTasks] = useState<any[]>([])
   const [upcomingTasks, setUpcomingTasks] = useState<any[]>([])
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null) // Added for toast messages
+
+  const [shareDialogOpen, setShareDialogOpen] = useState(false) // Kept for now, but will be replaced
+  const [shareSheetOpen, setShareSheetOpen] = useState(false) // Renamed from shareDialogOpen
+  const [inviteEmail, setInviteEmail] = useState("")
+  const [inviteRole, setInviteRole] = useState<string>("viewer")
+  const [inviteMessage, setInviteMessage] = useState("")
+  const [inviteLoading, setInviteLoading] = useState(false)
+  const [inviteError, setInviteError] = useState("")
+  const [inviteSuccess, setInviteSuccess] = useState("")
+  const [teamMembers, setTeamMembers] = useState<
+    Array<{
+      id: string
+      email: string
+      role: string
+      status: string
+      user?: { full_name: string; avatar_url: string | null }
+    }>
+  >([])
+  const [selectedIdeaForShare, setSelectedIdeaForShare] = useState<string>("")
 
   const totalTasks = useMemo(() => {
     return timelines.flatMap((t) => tasks[t.id] || []).length
@@ -479,6 +504,38 @@ export default function ProjectPlannerClient({
 
     fetchNotifications()
   }, [activeView])
+
+  // ADDED: Fetch team members when share dialog opens
+  useEffect(() => {
+    if (shareSheetOpen && ideas.length > 0) {
+      // Changed to use shareSheetOpen
+      const ideaId = selectedIdeaForShare || ideas[0]?.id
+      if (ideaId) {
+        // Find team for this idea
+        const fetchTeamForIdea = async () => {
+          const supabase = getSupabaseClient()
+          const {
+            data: { user },
+          } = await supabase.auth.getUser()
+          if (!user) return
+
+          const { data: team } = await supabase
+            .from("project_teams")
+            .select("id")
+            .eq("idea_id", ideaId)
+            .eq("owner_id", user.id)
+            .single()
+
+          if (team) {
+            fetchTeamMembers(team.id)
+          } else {
+            setTeamMembers([])
+          }
+        }
+        fetchTeamForIdea()
+      }
+    }
+  }, [shareSheetOpen, selectedIdeaForShare, ideas]) // Changed to use shareSheetOpen
 
   const loadTasks = async (timelineId: string) => {
     try {
@@ -899,6 +956,223 @@ export default function ProjectPlannerClient({
     }
   }
 
+  // ADDED: handleShareProject function to invite team members
+  const handleShareProject = async () => {
+    if (!inviteEmail) {
+      setInviteError("Please enter an email address")
+      return
+    }
+
+    if (!selectedIdeaForShare && ideas.length > 0) {
+      setInviteError("Please select a project to share")
+      return
+    }
+
+    const ideaId = selectedIdeaForShare || ideas[0]?.id
+    if (!ideaId) {
+      setInviteError("No project available to share")
+      return
+    }
+
+    setInviteLoading(true)
+    setInviteError("")
+    setInviteSuccess("")
+
+    try {
+      const supabase = getSupabaseClient()
+
+      // Get current user
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) {
+        setInviteError("You must be logged in to share projects")
+        setInviteLoading(false)
+        return
+      }
+
+      const checkResponse = await fetch("/api/users/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: inviteEmail.trim() }),
+      })
+
+      const checkResult = await checkResponse.json()
+
+      if (!checkResult.exists) {
+        setInviteError(checkResult.message || "User not found. They must be registered on the platform first.")
+        setInviteLoading(false)
+        return
+      }
+
+      const invitedUser = checkResult.user
+
+      // Check if inviting self
+      if (invitedUser.id === user.id) {
+        setInviteError("You cannot invite yourself to a project.")
+        setInviteLoading(false)
+        return
+      }
+
+      // Check if team exists for this idea, create if not
+      let teamId: string
+      const { data: existingTeam, error: teamCheckError } = await supabase
+        .from("project_teams")
+        .select("id")
+        .eq("idea_id", ideaId)
+        .eq("owner_id", user.id)
+        .single()
+
+      if (existingTeam) {
+        teamId = existingTeam.id
+      } else {
+        // Create a new team for this project
+        const ideaTitle = ideas.find((i) => i.id === ideaId)?.title || "My Project"
+        const { data: newTeam, error: createTeamError } = await supabase
+          .from("project_teams")
+          .insert({
+            idea_id: ideaId,
+            owner_id: user.id,
+            name: `${ideaTitle} Team`,
+          })
+          .select("id")
+          .single()
+
+        if (createTeamError || !newTeam) {
+          console.error("Error creating team:", createTeamError)
+          setInviteError("Failed to create project team. Please try again.")
+          setInviteLoading(false)
+          return
+        }
+        teamId = newTeam.id
+      }
+
+      // Check if user is already invited
+      const { data: existingMember } = await supabase
+        .from("team_members")
+        .select("id, status")
+        .eq("team_id", teamId)
+        .eq("email", inviteEmail.toLowerCase())
+        .single()
+
+      if (existingMember) {
+        setInviteError(`This user has already been invited (status: ${existingMember.status})`)
+        setInviteLoading(false)
+        return
+      }
+
+      // Create team member invitation
+      const { error: memberError } = await supabase.from("team_members").insert({
+        team_id: teamId,
+        user_id: invitedUser.id,
+        email: inviteEmail.toLowerCase(),
+        role: inviteRole,
+        status: "pending",
+        invited_by: user.id,
+        invited_at: new Date().toISOString(),
+      })
+
+      if (memberError) {
+        console.error("Error creating invitation:", memberError)
+        setInviteError("Failed to send invitation. Please try again.")
+        setInviteLoading(false)
+        return
+      }
+
+      // Create a notification/feedback entry for the invited user
+      await supabase.from("team_feedback").insert({
+        team_id: teamId,
+        idea_id: ideaId,
+        user_id: invitedUser.id,
+        feedback_type: "invitation",
+        content: inviteMessage || `You've been invited to collaborate on this project as a ${inviteRole}.`,
+      })
+
+      setInviteSuccess(`Invitation sent to ${invitedUser.full_name || inviteEmail}!`)
+      setInviteEmail("")
+      setInviteMessage("")
+
+      // Refresh team members list
+      fetchTeamMembers(teamId)
+
+      // Auto-close success message after 3 seconds
+      setTimeout(() => {
+        setInviteSuccess("")
+      }, 3000)
+    } catch (err) {
+      console.error("Share project error:", err)
+      setInviteError("An unexpected error occurred. Please try again.")
+    } finally {
+      setInviteLoading(false)
+    }
+  }
+
+  // ADDED: function to fetch team members
+  const fetchTeamMembers = async (teamId?: string) => {
+    try {
+      const supabase = getSupabaseClient()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) return
+
+      let query = supabase.from("team_members").select(`
+          id,
+          email,
+          role,
+          status,
+          user_id
+        `)
+
+      if (teamId) {
+        query = query.eq("team_id", teamId)
+      }
+
+      const { data: members, error } = await query
+
+      if (error) {
+        console.error("Error fetching team members:", error)
+        return
+      }
+
+      // Fetch user details for each member
+      if (members && members.length > 0) {
+        const userIds = members.map((m) => m.user_id).filter(Boolean)
+        const { data: users } = await supabase.from("users").select("id, full_name, avatar_url").in("id", userIds)
+
+        const membersWithUsers = members.map((member) => ({
+          ...member,
+          user: users?.find((u) => u.id === member.user_id),
+        }))
+
+        setTeamMembers(membersWithUsers)
+      } else {
+        setTeamMembers([])
+      }
+    } catch (err) {
+      console.error("Error fetching team members:", err)
+    }
+  }
+
+  // ADDED: function to remove team member
+  const handleRemoveTeamMember = async (memberId: string) => {
+    try {
+      const supabase = getSupabaseClient()
+      const { error } = await supabase.from("team_members").delete().eq("id", memberId)
+
+      if (error) {
+        console.error("Error removing member:", error)
+        setToast({ message: "Failed to remove team member", type: "error" })
+        return
+      }
+
+      setTeamMembers((prev) => prev.filter((m) => m.id !== memberId))
+      setToast({ message: "Team member removed", type: "success" })
+    } catch (err) {
+      console.error("Error removing member:", err)
+    }
+  }
+
   const getDateLabel = (dateString: string) => {
     const date = new Date(dateString)
     if (isToday(date)) return "Today"
@@ -962,9 +1236,20 @@ export default function ProjectPlannerClient({
               </p>
             </div>
             <div className="flex gap-3">
-              <button className="px-4 py-2 rounded-lg border border-border bg-background text-foreground hover:bg-muted transition-colors">
+              {/* Updated Share Project button to open the sheet */}
+              <Button
+                variant="outline"
+                className="border-primary/50 hover:bg-primary/10 bg-transparent"
+                onClick={() => {
+                  if (ideas.length > 0 && !selectedIdeaForShare) {
+                    setSelectedIdeaForShare(ideas[0].id)
+                  }
+                  setShareSheetOpen(true)
+                }}
+              >
+                <Share2 className="mr-2 h-4 w-4" />
                 Share Project
-              </button>
+              </Button>
               <button className="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
                 Save Progress
               </button>
@@ -1490,7 +1775,7 @@ export default function ProjectPlannerClient({
                                     }}
                                   />
                                   <Button onClick={handleAddSlackMember}>
-                                    <Plus className="w-4 h-4 mr-2" />
+                                    <UserPlus className="w-4 h-4 mr-2" />
                                     Invite
                                   </Button>
                                 </div>
@@ -1797,6 +2082,154 @@ export default function ProjectPlannerClient({
           )}
         </div>
       </div>
+
+      {/* Share Project Sheet (Replaced Dialog) */}
+      <Sheet open={shareSheetOpen} onOpenChange={setShareSheetOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Share2 className="h-5 w-5 text-primary" />
+              Share Project
+            </SheetTitle>
+            <SheetDescription>Invite team members or investors to collaborate on your project.</SheetDescription>
+          </SheetHeader>
+
+          <div className="flex-1 space-y-6 py-6">
+            {/* Project Selection */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Select Project</label>
+              <Select value={selectedIdeaForShare} onValueChange={setSelectedIdeaForShare}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a project" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ideas.map((idea) => (
+                    <SelectItem key={idea.id} value={idea.id}>
+                      {idea.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Email Input */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Email Address</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="email"
+                  placeholder="teammate@example.com"
+                  value={inviteEmail}
+                  onChange={(e) => {
+                    setInviteEmail(e.target.value)
+                    setInviteError("")
+                  }}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            {/* Role Selection */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Role</label>
+              <Select value={inviteRole} onValueChange={setInviteRole}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="viewer">Viewer - Can view project details</SelectItem>
+                  <SelectItem value="collaborator">Collaborator - Can edit and contribute</SelectItem>
+                  <SelectItem value="investor">Investor - Interested in funding</SelectItem>
+                  <SelectItem value="mentor">Mentor - Providing guidance</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Personal Message */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Personal Message (Optional)</label>
+              <Textarea
+                placeholder="Add a personal message to your invitation..."
+                value={inviteMessage}
+                onChange={(e) => setInviteMessage(e.target.value)}
+                rows={3}
+              />
+            </div>
+
+            {/* Error/Success Messages */}
+            {inviteError && (
+              <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                {inviteError}
+              </div>
+            )}
+            {inviteSuccess && (
+              <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-green-600 text-sm flex items-center gap-2">
+                <CheckSquare className="h-4 w-4" />
+                {inviteSuccess}
+              </div>
+            )}
+
+            {/* Existing Team Members */}
+            {teamMembers.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Current Team Members</label>
+                <div className="border rounded-lg divide-y">
+                  {teamMembers.map((member) => (
+                    <div key={member.id} className="flex items-center justify-between p-3">
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                          {member.user?.avatar_url ? (
+                            <img
+                              src={member.user.avatar_url || "/placeholder.svg"}
+                              alt=""
+                              className="h-8 w-8 rounded-full object-cover"
+                            />
+                          ) : (
+                            <Users className="h-4 w-4 text-primary" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">{member.user?.full_name || member.email}</p>
+                          <p className="text-xs text-muted-foreground capitalize">
+                            {member.role} • {member.status}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleRemoveTeamMember(member.id)}
+                        className="p-1 hover:bg-destructive/10 rounded text-muted-foreground hover:text-destructive transition-colors"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <SheetFooter className="border-t pt-4">
+            <Button variant="outline" onClick={() => setShareSheetOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleShareProject} disabled={inviteLoading}>
+              {inviteLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4 mr-2" />
+                  Send Invitation
+                </>
+              )}
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
 
       <Dialog open={addPhaseOpen} onOpenChange={setAddPhaseOpen}>
         <DialogContent className="max-w-2xl">
