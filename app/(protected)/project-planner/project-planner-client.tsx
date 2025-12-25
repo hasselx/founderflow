@@ -52,6 +52,8 @@ import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 // Added Sheet imports
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet"
+// Imported toast from Sonner
+import { toast } from "sonner"
 
 interface Timeline {
   id: string
@@ -92,10 +94,11 @@ export default function ProjectPlannerClient({
   const [timelines, setTimelines] = useState<Timeline[]>(initialTimelines)
   const [addPhaseOpen, setAddPhaseOpen] = useState(false)
 
-  // The local state should be the source of truth after deletion, not the server props
   useEffect(() => {
-    console.log("[v0] Props changed, syncing to state. New count:", initialTimelines.length)
-    setTimelines(initialTimelines)
+    if (initialTimelines && initialTimelines.length > 0) {
+      console.log("[v0] Props changed, syncing to state. New count:", initialTimelines.length)
+      setTimelines(initialTimelines)
+    }
   }, [initialTimelines])
 
   const [addTaskOpen, setAddTaskOpen] = useState(false)
@@ -171,7 +174,7 @@ export default function ProjectPlannerClient({
   const [notificationTasks, setNotificationTasks] = useState<any[]>([])
   const [overdueTasks, setOverdueTasks] = useState<any[]>([])
   const [upcomingTasks, setUpcomingTasks] = useState<any[]>([])
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null) // Added for toast messages
+  // const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null) // Removed
 
   const [shareDialogOpen, setShareDialogOpen] = useState(false) // Kept for now, but will be replaced
   const [shareSheetOpen, setShareSheetOpen] = useState(false) // Renamed from shareDialogOpen
@@ -603,28 +606,36 @@ export default function ProjectPlannerClient({
 
   // ADDED: handleDeletePhase function to delete timeline phases
   const handleDeletePhase = async (timelineId: string) => {
-    if (!confirm("Are you sure you want to delete this phase? This action cannot be undone.")) {
-      return
-    }
+    toast("Delete Phase?", {
+      description: "This action cannot be undone. Are you sure?",
+      action: {
+        label: "Delete",
+        onClick: async () => {
+          try {
+            const ideaId = timelines.find((t) => t.id === timelineId)?.idea_id
 
-    try {
-      const ideaId = timelines.find((t) => t.id === timelineId)?.idea_id
+            const response = await fetch(`/api/business-plan/${ideaId}/timeline?phaseId=${timelineId}`, {
+              method: "DELETE",
+            })
 
-      const response = await fetch(`/api/business-plan/${ideaId}/timeline?phaseId=${timelineId}`, {
-        method: "DELETE",
-      })
-
-      if (response.ok) {
-        setTimelines((prev) => prev.filter((t) => t.id !== timelineId))
-
-        setToast({ message: "Phase deleted successfully!", type: "success" })
-      } else {
-        throw new Error("Failed to delete phase")
-      }
-    } catch (error) {
-      console.error("[v0] Error deleting phase:", error)
-      setToast({ message: "Failed to delete phase. Please try again.", type: "error" })
-    }
+            if (response.ok) {
+              setTimelines((prev) => prev.filter((t) => t.id !== timelineId))
+              router.refresh()
+              toast.success("Phase deleted successfully")
+            } else {
+              throw new Error("Failed to delete phase")
+            }
+          } catch (error) {
+            console.error("[v0] Error deleting phase:", error)
+            toast.error("Failed to delete phase")
+          }
+        },
+      },
+      cancel: {
+        label: "Cancel",
+        onClick: () => {},
+      },
+    })
   }
 
   // ADDED: handleEditPhase function
@@ -645,6 +656,7 @@ export default function ProjectPlannerClient({
 
     // Update local state
     setTimelines((prev) => prev.map((t) => (t.id === timelineId ? { ...t, pinned } : t)))
+    router.refresh()
   }
 
   const handleAddTask = async () => {
@@ -762,35 +774,44 @@ export default function ProjectPlannerClient({
   }
 
   const handleDeleteTask = async (timelineId: string, taskId: string) => {
-    if (!confirm("Are you sure you want to delete this task?")) return
-
     if (!taskId) {
-      setError("Task ID is missing")
+      toast.error("Task ID is missing")
       return
     }
 
-    try {
-      const ideaId = timelines.find((t) => t.id === timelineId)?.idea_id
-      if (!ideaId) return
+    toast("Delete Task?", {
+      description: "Are you sure you want to remove this task?",
+      action: {
+        label: "Delete",
+        onClick: async () => {
+          try {
+            const ideaId = timelines.find((t) => t.id === timelineId)?.idea_id
+            if (!ideaId) return
 
-      const res = await fetch(`/api/business-plan/${ideaId}/timeline/${timelineId}/tasks`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: taskId }),
-      })
+            const res = await fetch(`/api/business-plan/${ideaId}/timeline/${timelineId}/tasks`, {
+              method: "DELETE",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ id: taskId }),
+            })
 
-      if (res.ok) {
-        await Promise.all([loadTasks(timelineId), recalculateProgress(timelineId)])
-        setSuccess(true)
-        setTimeout(() => setSuccess(false), 3000)
-      } else {
-        const data = await res.json()
-        setError(data.error || "Failed to delete task")
-      }
-    } catch (err) {
-      console.error("[v0] Delete task error:", err)
-      setError("Failed to delete task")
-    }
+            if (res.ok) {
+              await Promise.all([loadTasks(timelineId), recalculateProgress(timelineId)])
+              toast.success("Task deleted")
+            } else {
+              const data = await res.json()
+              toast.error(data.error || "Failed to delete task")
+            }
+          } catch (err) {
+            console.error("[v0] Delete task error:", err)
+            toast.error("Failed to delete task")
+          }
+        },
+      },
+      cancel: {
+        label: "Cancel",
+        onClick: () => {},
+      },
+    })
   }
 
   const handleEditTask = async () => {
@@ -820,11 +841,10 @@ export default function ProjectPlannerClient({
       setEditTaskOpen(false)
       setEditingTask(null)
       setEditingTaskTimelineId(null)
-      setSuccess(true)
-      setTimeout(() => setSuccess(false), 3000)
+      toast.success("Task updated") // Updated to Sonner
     } catch (err) {
       console.error("[v0] Edit task error:", err)
-      setError("Failed to update task")
+      toast.error("Failed to update task") // Updated to Sonner
     } finally {
       setSaving(false)
     }
@@ -1156,21 +1176,30 @@ export default function ProjectPlannerClient({
 
   // ADDED: function to remove team member
   const handleRemoveTeamMember = async (memberId: string) => {
-    try {
-      const supabase = getSupabaseClient()
-      const { error } = await supabase.from("team_members").delete().eq("id", memberId)
+    toast("Remove Member?", {
+      description: "Are you sure you want to remove this team member?",
+      action: {
+        label: "Remove",
+        onClick: async () => {
+          try {
+            const supabase = getSupabaseClient()
+            const { error } = await supabase.from("team_members").delete().eq("id", memberId)
 
-      if (error) {
-        console.error("Error removing member:", error)
-        setToast({ message: "Failed to remove team member", type: "error" })
-        return
-      }
+            if (error) throw error
 
-      setTeamMembers((prev) => prev.filter((m) => m.id !== memberId))
-      setToast({ message: "Team member removed", type: "success" })
-    } catch (err) {
-      console.error("Error removing member:", err)
-    }
+            setTeamMembers((prev) => prev.filter((m) => m.id !== memberId))
+            toast.success("Member removed")
+          } catch (error) {
+            console.error("[v0] Error removing member:", error)
+            toast.error("Failed to remove member")
+          }
+        },
+      },
+      cancel: {
+        label: "Cancel",
+        onClick: () => {},
+      },
+    })
   }
 
   const getDateLabel = (dateString: string) => {
@@ -1268,18 +1297,7 @@ export default function ProjectPlannerClient({
             </div>
           )}
 
-          {/* Toast message display */}
-          {toast && (
-            <div
-              className={`mb-6 p-4 rounded-lg text-sm ${
-                toast.type === "success"
-                  ? "bg-green-500/10 border border-green-500/20 text-green-600"
-                  : "bg-destructive/10 border border-destructive/20 text-destructive"
-              }`}
-            >
-              {toast.message}
-            </div>
-          )}
+          {/* Toast message display removed */}
 
           {activeView === "timeline" && (
             <>

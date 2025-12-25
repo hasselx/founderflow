@@ -4,6 +4,7 @@ import { Home, Lightbulb, LogOut, TrendingUp, ChevronDown, Settings, HelpCircle,
 import { useRouter, usePathname } from "next/navigation"
 import { useState } from "react"
 import Dock from "@/components/ui/dock"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 interface NavigationProps {
   user: { name: string; email: string }
@@ -65,11 +66,14 @@ export default function Navigation({ user }: NavigationProps) {
               <span className="text-xl font-bold text-foreground">FounderFlow</span>
             </div>
 
-            <div className="hidden md:block">
+            <div className="hidden md:flex items-center gap-4">
               <Dock items={dockItems} panelHeight={60} baseItemSize={48} magnification={72} />
+              <ThemeToggle />
             </div>
 
             <div className="flex items-center gap-2">
+              <ThemeToggle />
+              
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 className="md:hidden p-2 rounded-md hover:bg-muted transition-colors"

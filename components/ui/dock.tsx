@@ -5,6 +5,7 @@ import type React from "react"
 import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from "framer-motion"
 import { useRef, useState } from "react"
 import { cn } from "@/lib/utils"
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip"
 
 interface DockItem {
   icon: React.ReactNode
@@ -37,43 +38,37 @@ function DockIcon({ item, mouseX }: { item: DockItem; mouseX: any }) {
   const iconSize = useSpring(iconSizeSync, { mass: 0.1, stiffness: 200, damping: 15 })
 
   return (
-    <div className="relative flex flex-col items-center pt-12 -mt-12 overflow-visible">
-      <AnimatePresence>
-        {isHovered && (
-          <motion.div
-            initial={{ opacity: 0, y: 8, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8, scale: 0.9 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
-            className="absolute bottom-full mb-3 px-3 py-1.5 bg-card text-card-foreground text-xs font-medium rounded-lg shadow-lg whitespace-nowrap border border-border z-[100]"
-          >
-            {item.label}
-            <div className="absolute left-1/2 -translate-x-1/2 -bottom-1 w-2 h-2 bg-card border-b border-r border-border rotate-45" />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <motion.button
-        ref={ref}
-        style={{ width, height: width }}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        onClick={item.onClick}
-        className={cn(
-          "grid place-items-center rounded-xl border-2 transition-colors duration-200",
-          item.isActive
-            ? "bg-primary/10 border-primary text-primary"
-            : "bg-card/50 border-border/60 hover:border-border text-muted-foreground hover:text-foreground",
-        )}
-      >
-        <motion.div
-          style={{ width: iconSize, height: iconSize }}
-          className="flex items-center justify-center [&>svg]:w-full [&>svg]:h-full"
-        >
-          {item.icon}
-        </motion.div>
-      </motion.button>
-    </div>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="relative flex flex-col items-center overflow-visible">
+            <motion.button
+              ref={ref}
+              style={{ width, height: width }}
+              onMouseEnter={() => setIsHovered(true)}
+              onMouseLeave={() => setIsHovered(false)}
+              onClick={item.onClick}
+              className={cn(
+                "grid place-items-center rounded-xl border-2 transition-colors duration-200",
+                item.isActive
+                  ? "bg-primary/10 border-primary text-primary"
+                  : "bg-card/50 border-border/60 hover:border-border text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <motion.div
+                style={{ width: iconSize, height: iconSize }}
+                className="flex items-center justify-center [&>svg]:w-full [&>svg]:h-full"
+              >
+                {item.icon}
+              </motion.div>
+            </motion.button>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" sideOffset={8}>
+          {item.label}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   )
 }
 
