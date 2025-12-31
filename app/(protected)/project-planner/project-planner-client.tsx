@@ -94,7 +94,14 @@ export default function ProjectPlannerClient({
   const [addPhaseOpen, setAddPhaseOpen] = useState(false)
 
   useEffect(() => {
-    if (initialTimelines && initialTimelines.length > 0) {
+    if (
+      initialTimelines &&
+      (initialTimelines.length !== timelines.length ||
+        initialTimelines.some((t) => {
+          const existing = timelines.find((p) => p.id === t.id)
+          return existing && existing.pinned !== t.pinned
+        }))
+    ) {
       console.log("[v0] Props changed, syncing to state. New count:", initialTimelines.length)
       setTimelines(initialTimelines)
     }
@@ -605,35 +612,46 @@ export default function ProjectPlannerClient({
 
   // ADDED: handleDeletePhase function to delete timeline phases
   const handleDeletePhase = async (timelineId: string) => {
+    console.log("[v0] handleDeletePhase triggered for:", timelineId)
     toast("Delete Phase?", {
       description: "This action cannot be undone. Are you sure?",
       action: {
         label: "Delete",
         onClick: async () => {
           try {
+            console.log("[v0] Starting delete API call for:", timelineId)
             const ideaId = timelines.find((t) => t.id === timelineId)?.idea_id
+            if (!ideaId) {
+              console.error("[v0] Could not find ideaId for timeline:", timelineId)
+              return
+            }
 
             const response = await fetch(`/api/business-plan/${ideaId}/timeline?phaseId=${timelineId}`, {
               method: "DELETE",
             })
 
             if (!response.ok) {
+              const errorData = await response.json()
+              console.error("[v0] Delete API error:", errorData)
               throw new Error("Failed to delete phase")
             }
 
-            // Only update local state after successful API call
+            console.log("[v0] Delete API success, updating local state")
+            // Update local state first for instant feedback
             setTimelines((prev) => prev.filter((t) => t.id !== timelineId))
+
+            // Refresh to sync server components
             router.refresh()
             toast.success("Phase deleted successfully")
           } catch (error) {
-            console.error("[v0] Error deleting phase:", error)
+            console.error("[v0] Error in delete phase flow:", error)
             toast.error("Failed to delete phase")
           }
         },
       },
       cancel: {
         label: "Cancel",
-        onClick: () => {},
+        onClick: () => console.log("[v0] Delete phase cancelled"),
       },
     })
   }
@@ -645,31 +663,47 @@ export default function ProjectPlannerClient({
   }
 
   const handleTogglePin = async (timelineId: string, pinned: boolean) => {
-    const ideaId = timelines.find((t) => t.id === timelineId)?.idea_id
-    if (!ideaId) return
+    console.log("[v0] handleTogglePin triggered:", { timelineId, pinned })
+    const phase = timelines.find((t) => t.id === timelineId)
+    const ideaId = phase?.idea_id
+
+    if (!ideaId) {
+      console.error("[v0] No ideaId found for pinning:", timelineId)
+      return
+    }
 
     try {
+      console.log("[v0] Starting pin API call for:", timelineId)
+      // Optimistically update UI
+      setTimelines((prev) => prev.map((t) => (t.id === timelineId ? { ...t, pinned } : t)))
+
       const response = await fetch(`/api/business-plan/${ideaId}/timeline`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: timelineId,
           pinned,
+          // Include existing fields to satisfy API requirements
+          phase_name: phase.phase_name,
+          start_date: phase.start_date,
+          end_date: phase.end_date,
+          status: phase.status,
         }),
       })
 
       if (!response.ok) {
+        const errorData = await response.json()
+        console.error("[v0] Pin API error:", errorData)
+        // Revert local state on error
+        setTimelines((prev) => prev.map((t) => (t.id === timelineId ? { ...t, pinned: !pinned } : t)))
         throw new Error("Failed to update pin status")
       }
 
-      const data = await response.json()
-
-      // Update local state only after successful API call
-      setTimelines((prev) => prev.map((t) => (t.id === timelineId ? { ...t, pinned } : t)))
+      console.log("[v0] Pin API success")
       router.refresh()
       toast.success(pinned ? "Phase pinned" : "Phase unpinned")
     } catch (error) {
-      console.error("[v0] Error toggling pin:", error)
+      console.error("[v0] Error in toggle pin flow:", error)
       toast.error("Failed to update pin status")
     }
   }
