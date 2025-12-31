@@ -78,7 +78,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params
+    const { id: ideaId } = await params
     const supabase = await getSupabaseServerClient()
 
     const {
@@ -91,6 +91,28 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     const body = await request.json()
 
+    const { data: existingPhase, error: fetchError } = await supabase
+      .from("project_timelines")
+      .select("idea_id")
+      .eq("id", body.id)
+      .single()
+
+    if (fetchError || !existingPhase) {
+      console.error("[v0] Fetch phase error:", fetchError)
+      return NextResponse.json({ error: "Phase not found" }, { status: 404 })
+    }
+
+    const { data: idea, error: ideaError } = await supabase
+      .from("startup_ideas")
+      .select("user_id")
+      .eq("id", existingPhase.idea_id)
+      .single()
+
+    if (ideaError || !idea || idea.user_id !== user.id) {
+      console.error("[v0] Authorization failed - user does not own idea")
+      return NextResponse.json({ error: "Not authorized to edit this phase" }, { status: 403 })
+    }
+
     const { data: phase, error } = await supabase
       .from("project_timelines")
       .update({
@@ -101,7 +123,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         deliverables: body.deliverables,
         resources_needed: body.resources_needed,
         status: body.status,
-        pinned: body.pinned, // Added pinned field support
+        pinned: body.pinned,
         updated_at: new Date().toISOString(),
       })
       .eq("id", body.id)
@@ -135,11 +157,33 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { searchParams } = new URL(request.url)
-    const phaseId = searchParams.get("phaseId")
+    const body = await request.json()
+    const phaseId = body.phaseId
 
     if (!phaseId) {
       return NextResponse.json({ error: "Phase ID required" }, { status: 400 })
+    }
+
+    const { data: phase, error: fetchError } = await supabase
+      .from("project_timelines")
+      .select("idea_id")
+      .eq("id", phaseId)
+      .single()
+
+    if (fetchError || !phase) {
+      console.error("[v0] Fetch phase error:", fetchError)
+      return NextResponse.json({ error: "Phase not found" }, { status: 404 })
+    }
+
+    const { data: idea, error: ideaError } = await supabase
+      .from("startup_ideas")
+      .select("user_id")
+      .eq("id", phase.idea_id)
+      .single()
+
+    if (ideaError || !idea || idea.user_id !== user.id) {
+      console.error("[v0] Authorization failed - user does not own idea")
+      return NextResponse.json({ error: "Not authorized to delete this phase" }, { status: 403 })
     }
 
     const { error } = await supabase.from("project_timelines").delete().eq("id", phaseId)

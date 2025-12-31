@@ -94,15 +94,28 @@ export default function ProjectPlannerClient({
   const [addPhaseOpen, setAddPhaseOpen] = useState(false)
 
   useEffect(() => {
-    if (
-      initialTimelines &&
-      (initialTimelines.length !== timelines.length ||
-        initialTimelines.some((t) => {
-          const existing = timelines.find((p) => p.id === t.id)
-          return existing && existing.pinned !== t.pinned
-        }))
-    ) {
-      console.log("[v0] Props changed, syncing to state. New count:", initialTimelines.length)
+    if (!initialTimelines) return
+
+    // Only sync if there are actual differences
+    const hasChanges =
+      initialTimelines.length !== timelines.length ||
+      initialTimelines.some((newTimeline) => {
+        const existing = timelines.find((t) => t.id === newTimeline.id)
+        if (!existing) return true
+
+        // Compare all relevant properties to detect server-side changes
+        return (
+          existing.pinned !== newTimeline.pinned ||
+          existing.phase_name !== newTimeline.phase_name ||
+          existing.status !== newTimeline.status ||
+          existing.progress_percentage !== newTimeline.progress_percentage ||
+          existing.start_date !== newTimeline.start_date ||
+          existing.end_date !== newTimeline.end_date
+        )
+      })
+
+    if (hasChanges) {
+      console.log("[v0] Server state changed, syncing to local state")
       setTimelines(initialTimelines)
     }
   }, [initialTimelines])
@@ -623,21 +636,24 @@ export default function ProjectPlannerClient({
             const ideaId = timelines.find((t) => t.id === timelineId)?.idea_id
             if (!ideaId) {
               console.error("[v0] Could not find ideaId for timeline:", timelineId)
+              toast.error("Could not find project for this phase")
               return
             }
 
-            const response = await fetch(`/api/business-plan/${ideaId}/timeline?phaseId=${timelineId}`, {
+            const response = await fetch(`/api/business-plan/${ideaId}/timeline`, {
               method: "DELETE",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ phaseId: timelineId }),
             })
 
             if (!response.ok) {
               const errorData = await response.json()
               console.error("[v0] Delete API error:", errorData)
-              throw new Error("Failed to delete phase")
+              throw new Error(errorData.error || "Failed to delete phase")
             }
 
             console.log("[v0] Delete API success, updating local state")
-            // Update local state first for instant feedback
+            // Update local state after successful API call
             setTimelines((prev) => prev.filter((t) => t.id !== timelineId))
 
             // Refresh to sync server components
@@ -645,7 +661,7 @@ export default function ProjectPlannerClient({
             toast.success("Phase deleted successfully")
           } catch (error) {
             console.error("[v0] Error in delete phase flow:", error)
-            toast.error("Failed to delete phase")
+            toast.error(error instanceof Error ? error.message : "Failed to delete phase")
           }
         },
       },
@@ -669,8 +685,12 @@ export default function ProjectPlannerClient({
 
     if (!ideaId) {
       console.error("[v0] No ideaId found for pinning:", timelineId)
+      toast.error("Could not find project for this phase")
       return
     }
+
+    // Store previous state for rollback
+    const previousTimelines = timelines
 
     try {
       console.log("[v0] Starting pin API call for:", timelineId)
@@ -694,17 +714,18 @@ export default function ProjectPlannerClient({
       if (!response.ok) {
         const errorData = await response.json()
         console.error("[v0] Pin API error:", errorData)
-        // Revert local state on error
-        setTimelines((prev) => prev.map((t) => (t.id === timelineId ? { ...t, pinned: !pinned } : t)))
-        throw new Error("Failed to update pin status")
+        // Rollback to previous state on error
+        setTimelines(previousTimelines)
+        throw new Error(errorData.error || "Failed to update pin status")
       }
 
-      console.log("[v0] Pin API success")
+      console.log("[v0] Pin API success, refreshing from server")
+      // Refresh to ensure we have the latest server state
       router.refresh()
       toast.success(pinned ? "Phase pinned" : "Phase unpinned")
     } catch (error) {
       console.error("[v0] Error in toggle pin flow:", error)
-      toast.error("Failed to update pin status")
+      toast.error(error instanceof Error ? error.message : "Failed to update pin status")
     }
   }
 
@@ -1309,7 +1330,7 @@ export default function ProjectPlannerClient({
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-3xl font-bold text-foreground mb-2">Project Planner</h1>
-              <p className="text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 Transform your business concept into actionable implementation roadmaps
               </p>
             </div>
@@ -2478,17 +2499,21 @@ export default function ProjectPlannerClient({
 
                   if (!res.ok) {
                     setError(data.error || "Failed to update phase")
+                    toast.error(data.error || "Failed to update phase")
                     return
                   }
 
-                  setTimelines((prev) => prev.map((t) => (t.id === editingPhase.id ? { ...t, ...editingPhase } : t)))
+                  setTimelines((prev) => prev.map((t) => (t.id === editingPhase.id ? { ...t, ...data.phase } : t)))
                   setEditPhaseOpen(false)
                   setEditingPhase(null)
-                  setSuccess(true)
-                  setTimeout(() => setSuccess(false), 3000)
+
+                  router.refresh()
+                  toast.success("Phase updated successfully")
                 } catch (err) {
                   console.error("[v0] Edit phase error:", err)
-                  setError("Failed to update phase")
+                  const errorMessage = err instanceof Error ? err.message : "Failed to update phase"
+                  setError(errorMessage)
+                  toast.error(errorMessage)
                 } finally {
                   setSaving(false)
                 }
