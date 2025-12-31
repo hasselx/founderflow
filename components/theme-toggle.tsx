@@ -1,41 +1,34 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useTheme } from "next-themes"
 import { Moon, Sun } from "lucide-react"
-import { Toggle } from "@/components/ui/toggle"
+import { Switch } from "@/components/ui/switch"
+import { useEffect, useState } from "react"
 
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<"light" | "dark">("light")
+  const { theme, setTheme, resolvedTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
 
+  // Avoid hydration mismatch
   useEffect(() => {
-    // Load saved theme or use system preference
-    const savedTheme = localStorage.getItem("founderflow-theme")
-    const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches
-    const initialTheme = (savedTheme as "light" | "dark") || (systemDark ? "dark" : "light")
-    
-    setTheme(initialTheme)
-    document.documentElement.classList.toggle("dark", initialTheme === "dark")
+    setMounted(true)
   }, [])
 
-  const toggleTheme = () => {
-    const newTheme = theme === "light" ? "dark" : "light"
-    setTheme(newTheme)
-    localStorage.setItem("founderflow-theme", newTheme)
-    document.documentElement.classList.toggle("dark", newTheme === "dark")
+  if (!mounted) {
+    return null
   }
 
+  const isDark = resolvedTheme === "dark"
+
   return (
-    <Toggle 
-      pressed={theme === "dark"} 
-      onPressedChange={toggleTheme}
-      aria-label="Toggle theme"
-      className="h-9 w-9"
-    >
-      {theme === "dark" ? (
-        <Moon className="h-4 w-4" />
-      ) : (
-        <Sun className="h-4 w-4" />
-      )}
-    </Toggle>
+    <div className="flex items-center gap-2 px-2 py-1 rounded-full bg-muted/50 border border-border/50">
+      <Sun className="h-4 w-4 text-muted-foreground" />
+      <Switch
+        checked={isDark}
+        onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
+        aria-label="Toggle theme"
+      />
+      <Moon className="h-4 w-4 text-muted-foreground" />
+    </div>
   )
 }

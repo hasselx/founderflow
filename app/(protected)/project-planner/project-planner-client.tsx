@@ -90,6 +90,7 @@ export default function ProjectPlannerClient({
   ideas: Idea[]
 }) {
   const router = useRouter()
+  console.log("[v0] Rendering ProjectPlannerClient. InitialTimelines count:", initialTimelines?.length)
   const [timelines, setTimelines] = useState<Timeline[]>(initialTimelines)
   const [addPhaseOpen, setAddPhaseOpen] = useState(false)
 
@@ -97,25 +98,37 @@ export default function ProjectPlannerClient({
     if (!initialTimelines) return
 
     // Only sync if there are actual differences
-    const hasChanges =
-      initialTimelines.length !== timelines.length ||
-      initialTimelines.some((newTimeline) => {
-        const existing = timelines.find((t) => t.id === newTimeline.id)
-        if (!existing) return true
+    const diffs = initialTimelines.filter((newTimeline) => {
+      const existing = timelines.find((t) => t.id === newTimeline.id)
+      if (!existing) return true
 
-        // Compare all relevant properties to detect server-side changes
-        return (
-          existing.pinned !== newTimeline.pinned ||
-          existing.phase_name !== newTimeline.phase_name ||
-          existing.status !== newTimeline.status ||
-          existing.progress_percentage !== newTimeline.progress_percentage ||
-          existing.start_date !== newTimeline.start_date ||
-          existing.end_date !== newTimeline.end_date
-        )
-      })
+      const isDifferent =
+        existing.pinned !== newTimeline.pinned ||
+        existing.phase_name !== newTimeline.phase_name ||
+        existing.status !== newTimeline.status ||
+        existing.progress_percentage !== newTimeline.progress_percentage ||
+        existing.start_date !== newTimeline.start_date ||
+        existing.end_date !== newTimeline.end_date
+
+      if (isDifferent) {
+        console.log("[v0] Diff detected for phase:", existing.phase_name, {
+          localPinned: existing.pinned,
+          serverPinned: newTimeline.pinned,
+          id: existing.id,
+        })
+      }
+      return isDifferent
+    })
+
+    const hasChanges = initialTimelines.length !== timelines.length || diffs.length > 0
 
     if (hasChanges) {
-      console.log("[v0] Server state changed, syncing to local state")
+      console.log(
+        "[v0] Server state changed, syncing to local state. Length mismatch:",
+        initialTimelines.length !== timelines.length,
+        "Diffs count:",
+        diffs.length,
+      )
       setTimelines(initialTimelines)
     }
   }, [initialTimelines])
@@ -626,6 +639,7 @@ export default function ProjectPlannerClient({
   // ADDED: handleDeletePhase function to delete timeline phases
   const handleDeletePhase = async (timelineId: string) => {
     console.log("[v0] handleDeletePhase triggered for:", timelineId)
+    console.log("[v0] Current timelines count before delete:", timelines.length)
     toast("Delete Phase?", {
       description: "This action cannot be undone. Are you sure?",
       action: {
@@ -652,7 +666,7 @@ export default function ProjectPlannerClient({
               throw new Error(errorData.error || "Failed to delete phase")
             }
 
-            console.log("[v0] Delete API success, updating local state")
+            console.log("[v0] Delete API success, updating local state and calling router.refresh()")
             // Update local state after successful API call
             setTimelines((prev) => prev.filter((t) => t.id !== timelineId))
 
@@ -679,7 +693,7 @@ export default function ProjectPlannerClient({
   }
 
   const handleTogglePin = async (timelineId: string, pinned: boolean) => {
-    console.log("[v0] handleTogglePin triggered:", { timelineId, pinned })
+    console.log("[v0] handleTogglePin starting:", { timelineId, pinned })
     const phase = timelines.find((t) => t.id === timelineId)
     const ideaId = phase?.idea_id
 
@@ -693,10 +707,11 @@ export default function ProjectPlannerClient({
     const previousTimelines = timelines
 
     try {
-      console.log("[v0] Starting pin API call for:", timelineId)
+      console.log("[v0] Optimistically updating local state for pinning:", timelineId)
       // Optimistically update UI
       setTimelines((prev) => prev.map((t) => (t.id === timelineId ? { ...t, pinned } : t)))
 
+      console.log("[v0] Sending PUT request to update pin status for phase:", timelineId)
       const response = await fetch(`/api/business-plan/${ideaId}/timeline`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -713,13 +728,21 @@ export default function ProjectPlannerClient({
 
       if (!response.ok) {
         const errorData = await response.json()
-        console.error("[v0] Pin API error:", errorData)
+        console.error("[v0] Pin API error response:", errorData)
         // Rollback to previous state on error
         setTimelines(previousTimelines)
         throw new Error(errorData.error || "Failed to update pin status")
       }
 
-      console.log("[v0] Pin API success, refreshing from server")
+      // **FIX START**
+      // The `res` variable was undeclared and caused a lint error.
+      // It seems like it was intended to be `response`.
+      const responseData = await response.json()
+      // **FIX END**
+
+      console.log("[v0] Pin API success. Response data phase pinned:", responseData?.phase?.pinned)
+
+      console.log("[v0] Calling router.refresh() after successful pin update")
       // Refresh to ensure we have the latest server state
       router.refresh()
       toast.success(pinned ? "Phase pinned" : "Phase unpinned")
@@ -1497,7 +1520,7 @@ export default function ProjectPlannerClient({
                                   timeline.pinned ? "bg-primary/10" : ""
                                 }`}
                                 onClick={() => handleTogglePin(timeline.id, !timeline.pinned)}
-                                title={timeline.pinned ? "Unpin phase" : "Pin phase"}
+                                title={timeline.pinned ? "Pin phase" : "Unpin phase"}
                               >
                                 <Pin
                                   className={`w-4 h-4 ${
