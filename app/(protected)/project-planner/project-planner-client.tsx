@@ -49,7 +49,6 @@ import { Toggle } from "@/components/ui/toggle"
 import { getSupabaseClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
 // Added Sheet imports
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet"
 // Imported toast from Sonner
@@ -618,13 +617,14 @@ export default function ProjectPlannerClient({
               method: "DELETE",
             })
 
-            if (response.ok) {
-              setTimelines((prev) => prev.filter((t) => t.id !== timelineId))
-              router.refresh()
-              toast.success("Phase deleted successfully")
-            } else {
+            if (!response.ok) {
               throw new Error("Failed to delete phase")
             }
+
+            // Only update local state after successful API call
+            setTimelines((prev) => prev.filter((t) => t.id !== timelineId))
+            router.refresh()
+            toast.success("Phase deleted successfully")
           } catch (error) {
             console.error("[v0] Error deleting phase:", error)
             toast.error("Failed to delete phase")
@@ -645,18 +645,33 @@ export default function ProjectPlannerClient({
   }
 
   const handleTogglePin = async (timelineId: string, pinned: boolean) => {
-    const supabase = createClient()
+    const ideaId = timelines.find((t) => t.id === timelineId)?.idea_id
+    if (!ideaId) return
 
-    const { error } = await supabase.from("project_timelines").update({ pinned }).eq("id", timelineId)
+    try {
+      const response = await fetch(`/api/business-plan/${ideaId}/timeline`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: timelineId,
+          pinned,
+        }),
+      })
 
-    if (error) {
+      if (!response.ok) {
+        throw new Error("Failed to update pin status")
+      }
+
+      const data = await response.json()
+
+      // Update local state only after successful API call
+      setTimelines((prev) => prev.map((t) => (t.id === timelineId ? { ...t, pinned } : t)))
+      router.refresh()
+      toast.success(pinned ? "Phase pinned" : "Phase unpinned")
+    } catch (error) {
       console.error("[v0] Error toggling pin:", error)
-      return
+      toast.error("Failed to update pin status")
     }
-
-    // Update local state
-    setTimelines((prev) => prev.map((t) => (t.id === timelineId ? { ...t, pinned } : t)))
-    router.refresh()
   }
 
   const handleAddTask = async () => {

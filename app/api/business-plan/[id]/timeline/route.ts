@@ -1,10 +1,7 @@
 import { getSupabaseServerClient } from "@/lib/supabase/server"
-import { NextRequest, NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
     const supabase = await getSupabaseServerClient()
@@ -14,10 +11,7 @@ export async function POST(
     } = await supabase.auth.getUser()
 
     if (!user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     console.log("[v0] Timeline POST - user:", user.id, "idea_id:", id)
@@ -30,26 +24,17 @@ export async function POST(
 
     if (fetchError) {
       console.error("[v0] Fetch idea error:", fetchError)
-      return NextResponse.json(
-        { error: "Failed to fetch idea" },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: "Failed to fetch idea" }, { status: 500 })
     }
 
     if (!idea || idea.user_id !== user.id) {
-      return NextResponse.json(
-        { error: "Not authorized to edit this idea" },
-        { status: 403 }
-      )
+      return NextResponse.json({ error: "Not authorized to edit this idea" }, { status: 403 })
     }
 
     const body = await request.json()
 
     if (!body.phase_name || !body.start_date || !body.end_date) {
-      return NextResponse.json(
-        { error: "Missing required fields: phase_name, start_date, end_date" },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: "Missing required fields: phase_name, start_date, end_date" }, { status: 400 })
     }
 
     const { data: phase, error: insertError } = await supabase
@@ -72,10 +57,7 @@ export async function POST(
 
     if (insertError) {
       console.error("[v0] Insert error:", insertError)
-      return NextResponse.json(
-        { error: `Failed to add phase: ${insertError.message}` },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: `Failed to add phase: ${insertError.message}` }, { status: 500 })
     }
 
     console.log("[v0] Phase created successfully:", phase.id)
@@ -89,15 +71,12 @@ export async function POST(
     console.error("[v0] Timeline API error:", error)
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
     const supabase = await getSupabaseServerClient()
@@ -122,6 +101,7 @@ export async function PUT(
         deliverables: body.deliverables,
         resources_needed: body.resources_needed,
         status: body.status,
+        pinned: body.pinned, // Added pinned field support
         updated_at: new Date().toISOString(),
       })
       .eq("id", body.id)
@@ -143,10 +123,7 @@ export async function PUT(
   }
 }
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const supabase = await getSupabaseServerClient()
 
@@ -165,10 +142,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Phase ID required" }, { status: 400 })
     }
 
-    const { error } = await supabase
-      .from("project_timelines")
-      .delete()
-      .eq("id", phaseId)
+    const { error } = await supabase.from("project_timelines").delete().eq("id", phaseId)
 
     if (error) throw error
 
@@ -177,15 +151,12 @@ export async function DELETE(
     console.error("[v0] Delete phase error:", error)
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to delete phase" },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
     const supabase = await getSupabaseServerClient()
@@ -211,7 +182,7 @@ export async function GET(
     console.error("[v0] Get phases error:", error)
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to fetch phases" },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }
